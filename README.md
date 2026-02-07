@@ -119,7 +119,7 @@ images/
 
 ### Starting the Application
 ```bash
-python "anno4 copy.py"
+python app.py
 ```
 Access the application at: `http://127.0.0.1:6700/tagger`
 
