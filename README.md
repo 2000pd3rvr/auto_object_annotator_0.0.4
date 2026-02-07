@@ -1,3 +1,15 @@
+---
+title: Auto Object Annotator 0.0.4
+emoji: 🚀
+colorFrom: yellow
+colorTo: green
+sdk: docker
+sdk_version: "4.0.0"
+python_version: "3.9"
+app_file: app.py
+pinned: false
+---
+
 # Image Annotation Tool
 
 A professional web-based annotation application for multi-view image datasets with advanced features for efficient labeling and quality assurance.
