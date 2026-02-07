@@ -504,4 +504,9 @@ if __name__ == "__main__":
             print(f"Error loading existing annotations: {e}")
             # Don't clear LABELS here, keep them empty if loading fails
     print(f"Found {len(folder_sets)} valid folder sets")
-    app.run(host="127.0.0.1", port=7620, debug=False)
+    # For HuggingFace Spaces, use 0.0.0.0 and port 7860
+    # For local development, you can use 127.0.0.1 and port 7620
+    if os.getenv("SPACE_ID"):  # Running on HuggingFace
+        app.run(host="0.0.0.0", port=7860, debug=False)
+    else:  # Running locally
+        app.run(host="127.0.0.1", port=7620, debug=False)
