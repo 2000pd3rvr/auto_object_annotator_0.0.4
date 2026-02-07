@@ -1,0 +1,13 @@
+image,id,name,centerX,centerY,width,height
+headset/NOBJ__pu_pm15dtsn_x_bd_av1_randist___hollow_hybrid__0-sr_int_full.png,1,headset,1481,1363,961,712
+headset/NOBJ__pu_pm15dtsn_x_bd_av1_randist___hollow_hybrid__7-sr_int_full.png,1,headset,1471,1421,981,718
+WGF/WGF__pu_pm15dtsn_x_bd_av1_20cm_____75-sr_int_full.png,2,tile,1354,1510,2436,1863
+cup/NOBJ__pu_pm15dtsn_x_bd_av1_randist___cupin__8-sr_int_full.png,3,cup,1520,1379,546,467
+cup/NOBJ__pu_pm15dtsn_x_bd_av1_randist___cupin__13-sr_int_full.png,3,cup,1526,1338,637,395
+WNT/WNT__pu_pm15dtsn_x_bd_av10_280cm_____31-sr_int_full.png,2,tile,1442,1488,130,117
+WNT/WNT__pr_0dtsn_x_b_av10_280cm_____7-sr_int_full.png,2,tile,1627,1418,123,100
+WNT/WNT__pr_+15dtsn_x_b_av6_80cm_____7-sr_int_full.png,2,tile,1422,1418,390,367
+WNT/WNT__pl_+15dtsn_x_b_av6_80cm_____13-sr_int_full.png,2,tile,1367,1744,409,384
+WNT/WNT__pr_-15dtsn_x_b_av6_100cm_____16-sr_int_full.png,2,tile,1608,1936,357,345
+blackNylon/BNT__BNT__pl_-15dtsn_x_b_av6_80cm_____4-sr_int_full.png,4,test,1301,1182,374,395
+blackShellac/BSD__pd_-15dtsn_x_b_av1_20cm_____2-sr_int_full.png,5,disc,1798,1279,1587,1268

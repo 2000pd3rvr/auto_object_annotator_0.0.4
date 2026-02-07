@@ -1,0 +1,753 @@
+<!doctype html>
+<html style="height:100%;">
+<head>
+    <title>Tagger</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/cerulean/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .canvas-container {
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        .canvas-container:hover {
+            border-color: #ff1493;
+            box-shadow: 0 0 10px rgba(255, 20, 147, 0.3);
+        }
+        .image-label {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: rgba(255, 20, 147, 0.9);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .annotation-count {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(40, 167, 69, 0.9);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .help-text {
+            background: #e7f3ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body style="height:100%;">
+<nav id="sidebar" style="
+            width: 18%;
+            height: 100%;
+            float: left;
+            z-index: 8000;
+            margin-bottom: 0px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            font-family: Garamond, serif;
+            font-weight: normal;
+            color: #666666;">
+    <div class="panel panel-default" style="height: 100%;">
+        <div class="panel-heading">
+            <h3 class="panel-title" style="font-family: Garamond, serif; font-weight: normal; color: #666666;">Labels</h3>
+        </div>
+        <div class="panel-body" style="overflow-y: auto; height: calc(100% - 60px); word-wrap: break-word; overflow-wrap: break-word;">
+            <div class="list-group">
+              <h4 style="font-size: 14px; margin-bottom: 10px; word-wrap: break-word;">{{ current_folder }} - Set {{ image_set_index }}/{{ max_sets }}</h4>
+
+              <!-- Current 3 images -->
+              {% for img in current_images %}
+                {% set img_type = 'sr_int_full' if 'sr_int_full' in img else ('tr_line' if '-tr_line' in img else 'tr_int_full') %}
+                {% set color = '#ff8c00' if img_type == 'sr_int_full' else ('#007bff' if img_type == 'tr_line' else '#28a745') %}
+                {% set icon = '🟠' if img_type == 'sr_int_full' else ('🔵' if img_type == 'tr_line' else '🟢') %}
+
+                <h5 style="color: {{ color }}; margin-top: 15px; margin-bottom: 8px; font-size: 12px; word-wrap: break-word; background-color: rgba(255,255,255,0.9); padding: 4px; border-radius: 3px;">{{ icon }} {{ img.split('/')[-1] }}</h5>
+                {% for label in labels if label.image == img %}
+                <div class="list-group-item" style="padding: 6px; margin-left: 10px; margin-bottom: 5px; font-size: 11px; word-wrap: break-word;">
+                    <div class="input-group">
+                        {% set annotation_id = label.id if label.id else (label.temp_id if label.temp_id else loop.index0) %}
+                        {% set display_id = annotation_id %}
+                        {% set id_type = 'Class' if label.id else 'Temp' %}
+                        <span class="input-group-addon" style="background: transparent; color: {{ color }}; border: 2px solid {{ color }}; font-weight: bold; font-size: 10px; padding: 4px 6px;">{{ id_type }} {{ display_id }}</span>
+                        {% if label.name %}
+                            <div class="form-control" style="background-color:#d4edda; border: 2px solid #28a745; padding: 4px; font-size: 11px;">
+                                <div style="font-weight: bold; color: #155724; word-wrap: break-word; margin-bottom: 3px;">{{ label.name }}</div>
+                                <button class="btn btn-xs btn-warning" onclick="editLabel('{{ img }}', '{{ annotation_id }}', '{{ label.name }}')" style="padding: 1px 4px; font-size: 9px;">Edit</button>
+                            </div>
+                        {% else %}
+                            <input id="input-{{ loop.index0 }}-{{ annotation_id }}"
+                                   onkeydown="if (event.keyCode == 13) { labelAnnotation('{{ img }}', '{{ annotation_id }}', this.value); }"
+                                   type="text"
+                                   class="form-control"
+                                   placeholder="class name"
+                                   style="border: 2px solid #007bff; font-size: 11px; padding: 4px;"
+                                   autofocus>
+                        {% endif %}
+                        <span class="input-group-btn">
+                            <button id="btn-{{ loop.index0 }}-{{ annotation_id }}"
+                                    class="btn btn-danger btn-xs"
+                                    onclick="if(confirm('Delete this annotation?')) { removeAnnotation('{{ img }}', '{{ annotation_id }}'); }"
+                                    type="button"
+                                    style="font-size: 9px; padding: 2px 4px;"
+                                    title="Delete annotation">
+                                🗑️
+                            </button>
+                        </span>
+                    </div>
+                    <small class="text-muted" style="font-size: 9px; word-wrap: break-word; display: block; margin-top: 2px;">
+                        C:({{ "%.0f"|format(label.centerX|float) }},{{ "%.0f"|format(label.centerY|float) }})
+                        S:{{ "%.0f"|format(label.width|float) }}×{{ "%.0f"|format(label.height|float) }}
+                    </small>
+                </div>
+                {% endfor %}
+              {% endfor %}
+            </div>
+        </div>
+    </div>
+</nav>
+<div id="content" class="container" style="
+            width: 82%;
+            height: 100%;
+            float: right;
+            z-index: 8000;
+            margin-bottom: 0px;">
+    <div class="row">
+        <text>Folder {{ head }} / {{ len }}: {{ current_folder }} | Image Set {{ image_set_index }} / {{ max_sets }}</text>
+        <div style="float:right;">
+            <!-- Folder Navigation - Always available in continuous loop mode -->
+            <a href="/prev_folder" style="background: transparent; color: #dc3545; border: 1px solid #dc3545; padding: 2px 4px; border-radius: 3px; text-decoration: none; font-size: 7px; margin-right: 5px;" title="Previous folder (loops to end)">
+                <span class="glyphicon glyphicon-chevron-left"></span><span class="glyphicon glyphicon-chevron-left"></span> Prev Folder
+            </a>
+            <a href="/next_folder" style="background: transparent; color: #dc3545; border: 1px solid #dc3545; padding: 2px 4px; border-radius: 3px; text-decoration: none; font-size: 7px; margin-right: 5px;" title="Next folder (loops to start)">
+                Next Folder <span class="glyphicon glyphicon-chevron-right"></span><span class="glyphicon glyphicon-chevron-right"></span>
+            </a>
+
+            <!-- Image Set Navigation -->
+            {% if has_prev_set %}
+            <a href="/prev_set" style="background: transparent; color: #dc3545; border: 1px solid #dc3545; padding: 2px 4px; border-radius: 3px; text-decoration: none; font-size: 7px; margin-right: 5px;" title="Previous image set">
+                <span class="glyphicon glyphicon-arrow-left"></span> Prev Set
+            </a>
+            {% endif %}
+            {% if has_next_set %}
+            <a href="/next_set" style="background: transparent; color: #dc3545; border: 1px solid #dc3545; padding: 2px 4px; border-radius: 3px; text-decoration: none; font-size: 7px; margin-right: 5px;" title="Next image set">
+                Next Set <span class="glyphicon glyphicon-arrow-right"></span>
+            </a>
+            {% endif %}
+
+            <!-- Play button for auto-looping through image sets -->
+            <button id="playButton" onclick="toggleAutoPlay()" style="background: transparent; color: #28a745; border: 1px solid #28a745; padding: 2px 4px; border-radius: 3px; cursor: pointer; font-size: 7px; margin-right: 5px;" title="Auto-loop through all images">
+                ▶️ Play
+            </button>
+
+            <button onclick="showResetDialog()" style="background: transparent; color: #dc3545; border: 2px solid #dc3545; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 7px; margin-left: 10px;">Reset Annotations</button>
+
+
+        </div>
+    </div>
+
+
+    <!-- Display current 3 images in preferred layout -->
+    {% if current_images|length >= 2 %}
+    <!-- Top row: sr_int_full.png and -tr_line.png side by side at 50% width each -->
+    <div style="height: 55%; display: flex;">
+        {% for img in current_images[:2] %}
+        {% set img_type = 'sr_int_full' if 'sr_int_full' in img else 'tr_line' %}
+        {% set color = '#ff8c00' if img_type == 'sr_int_full' else '#007bff' %}
+        {% set icon = '🟠' if img_type == 'sr_int_full' else '🔵' %}
+        <div class="canvas-container" style="width: 50%; position: relative;">
+            <div class="annotation-count" id="count_{{ loop.index0 }}">0 annotations</div>
+            <button onclick="zoomCanvas('canvas_{{ loop.index0 }}')" style="position: absolute; top: 5px; left: 5px; background: transparent; color: rgba(128, 128, 128, 0.7); border: 1px solid rgba(128, 128, 128, 0.5); padding: 2px 4px; border-radius: 3px; cursor: pointer; font-size: 6px; z-index: 10;">🔍</button>
+            <canvas id="canvas_{{ loop.index0 }}" style="width:100%; height:100%; display: block;"></canvas>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Bottom row: -tr_int_full.png at 100% width -->
+    {% if current_images|length >= 3 %}
+    <div style="height: 45%;">
+        {% set img = current_images[2] %}
+        <div class="canvas-container" style="width: 100%; height: 100%; position: relative;">
+            <div class="annotation-count" id="count_2">0 annotations</div>
+            <button onclick="zoomCanvas('canvas_2')" style="position: absolute; top: 5px; left: 5px; background: transparent; color: rgba(128, 128, 128, 0.7); border: 1px solid rgba(128, 128, 128, 0.5); padding: 2px 4px; border-radius: 3px; cursor: pointer; font-size: 6px; z-index: 10;">🔍</button>
+            <canvas id="canvas_2" style="width:100%; height:100%; display: block;"></canvas>
+        </div>
+    </div>
+    {% elif current_images|length == 1 %}
+    <!-- If only one image, show it full width -->
+    <div style="height: 95%;">
+        {% set img = current_images[0] %}
+        {% set img_type = 'sr_int_full' if 'sr_int_full' in img else ('tr_line' if '-tr_line' in img else 'tr_int_full') %}
+        {% set color = '#ff8c00' if img_type == 'sr_int_full' else ('#007bff' if img_type == 'tr_line' else '#28a745') %}
+        {% set icon = '🟠' if img_type == 'sr_int_full' else ('🔵' if img_type == 'tr_line' else '🟢') %}
+        <div class="canvas-container" style="width: 100%; height: 100%; position: relative;">
+            <div class="annotation-count" id="count_0">0 annotations</div>
+            <button onclick="zoomCanvas('canvas_0')" style="position: absolute; top: 5px; left: 5px; background: transparent; color: rgba(128, 128, 128, 0.7); border: 1px solid rgba(128, 128, 128, 0.5); padding: 2px 4px; border-radius: 3px; cursor: pointer; font-size: 6px; z-index: 10;">🔍</button>
+            <canvas id="canvas_0" style="width:100%; height:100%; display: block;"></canvas>
+        </div>
+    </div>
+    {% elif current_images|length == 2 %}
+    <!-- If only two images, show them side by side -->
+    <div style="height: 95%; display: flex;">
+        {% for img in current_images %}
+        {% set img_type = 'sr_int_full' if 'sr_int_full' in img else ('tr_line' if '-tr_line' in img else 'tr_int_full') %}
+        {% set color = '#ff8c00' if img_type == 'sr_int_full' else ('#007bff' if img_type == 'tr_line' else '#28a745') %}
+        {% set icon = '🟠' if img_type == 'sr_int_full' else ('🔵' if img_type == 'tr_line' else '🟢') %}
+        <div class="canvas-container" style="width: 50%; position: relative;">
+            <div class="annotation-count" id="count_{{ loop.index0 }}">0 annotations</div>
+            <button onclick="zoomCanvas('canvas_{{ loop.index0 }}')" style="position: absolute; top: 5px; left: 5px; background: transparent; color: rgba(128, 128, 128, 0.7); border: 1px solid rgba(128, 128, 128, 0.5); padding: 2px 4px; border-radius: 3px; cursor: pointer; font-size: 6px; z-index: 10;">🔍</button>
+            <canvas id="canvas_{{ loop.index0 }}" style="width:100%; height:100%; display: block;"></canvas>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+<script>
+function labelAnnotation(image, id, name) {
+    if (name.trim() === '') {
+        alert('Please enter a label name!');
+        return;
+    }
+    window.location.replace(`/label/${id}?image=${encodeURIComponent(image)}&name=${encodeURIComponent(name)}`);
+}
+
+function removeAnnotation(image, id) {
+    window.location.replace(`/remove/${id}?image=${encodeURIComponent(image)}`);
+}
+
+function editLabel(image, id, currentName) {
+    const newName = prompt('Edit label name:', currentName);
+    if (newName !== null && newName.trim() !== '') {
+        window.location.replace(`/label/${id}?image=${encodeURIComponent(image)}&name=${encodeURIComponent(newName.trim())}`);
+    }
+}
+
+function showResetDialog() {
+    // First dialog: Choose scope
+    const resetCurrentFolder = confirm('Choose reset scope:\n\nOK = Reset annotations for CURRENT FOLDER only\nCancel = Reset ALL annotations from ALL FOLDERS');
+
+    if (resetCurrentFolder === true) {
+        // User chose current folder only
+        if (confirm('Are you sure you want to reset all annotations for the CURRENT FOLDER only?\n\nThis will remove all annotations from the current folder but keep annotations from other folders.\n\nThis action cannot be undone.')) {
+            window.location.replace('/reset_annotations?scope=folder');
+        }
+    } else {
+        // User chose all folders
+        if (confirm('Are you sure you want to reset ALL annotations from ALL FOLDERS?\n\nThis will remove EVERY annotation from EVERY folder.\n\nThis action cannot be undone.')) {
+            window.location.replace('/reset_annotations?scope=all');
+        }
+    }
+}
+
+// Auto-play functionality for looping through image sets
+let autoPlayInterval = null;
+let isAutoPlaying = false;
+
+function toggleAutoPlay() {
+    const playButton = document.getElementById('playButton');
+
+    if (isAutoPlaying) {
+        // Stop auto-play
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+        isAutoPlaying = false;
+        playButton.innerHTML = '▶️ Play';
+        playButton.style.color = '#28a745';
+        playButton.style.borderColor = '#28a745';
+        playButton.title = 'Auto-loop through all images';
+    } else {
+        // Start auto-play
+        const interval = prompt('Enter auto-play interval in seconds (default: 5):', '5');
+        const intervalSeconds = parseFloat(interval) || 5;
+
+        if (intervalSeconds > 0) {
+            isAutoPlaying = true;
+            playButton.innerHTML = '⏸️ Pause';
+            playButton.style.color = '#dc3545';
+            playButton.style.borderColor = '#dc3545';
+            playButton.title = 'Pause auto-loop through all images';
+
+            autoPlayInterval = setInterval(() => {
+                // Always try to go to next set first (this cycles through all images)
+                const nextSetLink = document.querySelector('a[href="/next_set"]');
+                if (nextSetLink) {
+                    window.location.href = '/next_set';
+                } else {
+                    // If no next set, try next folder to continue with more images
+                    const nextFolderLink = document.querySelector('a[href="/next_folder"]');
+                    if (nextFolderLink) {
+                        window.location.href = '/next_folder';
+                    } else {
+                        // If no next folder, loop back to beginning to play all images again
+                        const prevFolderLink = document.querySelector('a[href="/prev_folder"]');
+                        if (prevFolderLink) {
+                            // Go to first folder to restart the cycle
+                            window.location.href = '/prev_folder';
+                        } else {
+                            // Stop auto-play if no navigation available
+                            toggleAutoPlay();
+                            alert('Auto-play stopped: No navigation available.');
+                        }
+                    }
+                }
+            }, intervalSeconds * 1000);
+        }
+    }
+}
+
+function zoomCanvas(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    let currentZoom = 1.0;
+    let fitToScreenZoom = 1.0;
+
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); z-index: 1000; display: flex;
+        justify-content: center; align-items: center; overflow: auto;
+    `;
+
+    // Create zoomed canvas container
+    const container = document.createElement('div');
+    container.style.cssText = `
+        background: white; padding: 20px; border-radius: 8px;
+        position: relative; max-width: 95%; max-height: 95%;
+        overflow: auto; display: flex; flex-direction: column;
+    `;
+
+    // Create control panel
+    const controls = document.createElement('div');
+    controls.style.cssText = `
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 10px; padding: 5px; background: #f8f9fa; border-radius: 4px;
+    `;
+
+    // Create zoom controls
+    const zoomControls = document.createElement('div');
+    zoomControls.style.cssText = 'display: flex; gap: 10px; align-items: center;';
+
+    const zoomOutBtn = document.createElement('button');
+    zoomOutBtn.textContent = '🔍−';
+    zoomOutBtn.style.cssText = `
+        background: transparent; color: #6c757d; border: 1px solid #6c757d;
+        padding: 2px 5px; border-radius: 3px; cursor: pointer; font-size: 7px;
+    `;
+
+    const zoomInBtn = document.createElement('button');
+    zoomInBtn.textContent = '🔍+';
+    zoomInBtn.style.cssText = `
+        background: transparent; color: #28a745; border: 1px solid #28a745;
+        padding: 2px 5px; border-radius: 3px; cursor: pointer; font-size: 7px;
+    `;
+
+    const zoomLevel = document.createElement('span');
+    zoomLevel.style.cssText = 'font-weight: bold; min-width: 30px; text-align: center; font-size: 7px;';
+    zoomLevel.textContent = '100%';
+
+    const resetBtn = document.createElement('button');
+    resetBtn.textContent = 'Reset';
+    resetBtn.style.cssText = `
+        background: transparent; color: #007bff; border: 1px solid #007bff;
+        padding: 2px 5px; border-radius: 3px; cursor: pointer; font-size: 7px;
+    `;
+
+    // Create close button
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕ Close';
+    closeBtn.style.cssText = `
+        background: transparent; color: #dc3545; border: 1px solid #dc3545;
+        padding: 2px 7px; border-radius: 3px; cursor: pointer; font-size: 7px;
+    `;
+    closeBtn.onclick = () => document.body.removeChild(modal);
+
+    // Create canvas container
+    const canvasContainer = document.createElement('div');
+    canvasContainer.style.cssText = `
+        max-height: 70vh; max-width: 90vw; border: 1px solid #ccc;
+        background: #f8f9fa; position: relative; display: flex;
+        justify-content: center; align-items: center;
+    `;
+
+    // Create inner container for proper scrolling
+    const innerContainer = document.createElement('div');
+    innerContainer.style.cssText = `
+        transition: all 0.2s ease; position: relative;
+    `;
+
+    // Clone and scale the canvas
+    const zoomedCanvas = canvas.cloneNode(true);
+    zoomedCanvas.style.cssText = `
+        display: block; transform-origin: center center;
+        transition: transform 0.2s ease;
+    `;
+
+    // Calculate fit-to-screen zoom level
+    function calculateFitToScreenZoom() {
+        const rect = canvas.getBoundingClientRect();
+        const originalWidth = canvas.width || rect.width;
+        const originalHeight = canvas.height || rect.height;
+
+        const containerMaxWidth = window.innerWidth * 0.85; // 85% of screen width
+        const containerMaxHeight = window.innerHeight * 0.65; // 65% of screen height
+
+        const scaleX = containerMaxWidth / originalWidth;
+        const scaleY = containerMaxHeight / originalHeight;
+
+        return Math.min(scaleX, scaleY, 1.0); // Don't scale up beyond 100%
+    }
+
+    // Update zoom function
+    function updateZoom() {
+        const scale = currentZoom * fitToScreenZoom;
+        zoomedCanvas.style.transform = `scale(${scale})`;
+        zoomLevel.textContent = Math.round(currentZoom * 100) + '%';
+
+        // Get original canvas dimensions
+        const rect = canvas.getBoundingClientRect();
+        const originalWidth = canvas.width || rect.width;
+        const originalHeight = canvas.height || rect.height;
+
+        // Set canvas to original size
+        zoomedCanvas.width = originalWidth;
+        zoomedCanvas.height = originalHeight;
+        zoomedCanvas.style.width = originalWidth + 'px';
+        zoomedCanvas.style.height = originalHeight + 'px';
+
+        // Determine if scrolling is needed (zoom > 100%)
+        if (currentZoom > 1.0) {
+            // Enable scrolling for zoom > 100%
+            canvasContainer.style.overflow = 'auto';
+            canvasContainer.style.justifyContent = 'flex-start';
+            canvasContainer.style.alignItems = 'flex-start';
+
+            // Update inner container size to accommodate scaled canvas
+            const scaledWidth = originalWidth * scale;
+            const scaledHeight = originalHeight * scale;
+            innerContainer.style.width = scaledWidth + 'px';
+            innerContainer.style.height = scaledHeight + 'px';
+            zoomedCanvas.style.transformOrigin = 'top left';
+        } else {
+            // Fit to screen mode (zoom <= 100%)
+            canvasContainer.style.overflow = 'hidden';
+            canvasContainer.style.justifyContent = 'center';
+            canvasContainer.style.alignItems = 'center';
+
+            // Reset container size
+            innerContainer.style.width = 'auto';
+            innerContainer.style.height = 'auto';
+            zoomedCanvas.style.transformOrigin = 'center center';
+        }
+
+        // Redraw canvas content at original size
+        const zoomedCtx = zoomedCanvas.getContext('2d');
+        zoomedCtx.clearRect(0, 0, originalWidth, originalHeight);
+        zoomedCtx.drawImage(canvas, 0, 0);
+    }
+
+    // Zoom event handlers
+    zoomInBtn.onclick = () => {
+        currentZoom = Math.min(currentZoom * 1.25, 5.0); // Max 500%
+        updateZoom();
+    };
+
+    zoomOutBtn.onclick = () => {
+        currentZoom = Math.max(currentZoom / 1.25, 0.25); // Min 25%
+        updateZoom();
+    };
+
+    resetBtn.onclick = () => {
+        currentZoom = 1.0;
+        updateZoom();
+    };
+
+    // Mouse wheel zoom
+    canvasContainer.onwheel = (e) => {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+            currentZoom = Math.min(currentZoom * 1.1, 5.0);
+        } else {
+            currentZoom = Math.max(currentZoom / 1.1, 0.25);
+        }
+        updateZoom();
+    };
+
+    // Assemble controls
+    zoomControls.appendChild(zoomOutBtn);
+    zoomControls.appendChild(zoomLevel);
+    zoomControls.appendChild(zoomInBtn);
+    zoomControls.appendChild(resetBtn);
+
+    controls.appendChild(zoomControls);
+    controls.appendChild(closeBtn);
+
+    // Assemble modal
+    innerContainer.appendChild(zoomedCanvas);
+    canvasContainer.appendChild(innerContainer);
+    container.appendChild(controls);
+    container.appendChild(canvasContainer);
+    modal.appendChild(container);
+    document.body.appendChild(modal);
+
+    // Calculate fit-to-screen zoom and initialize
+    fitToScreenZoom = calculateFitToScreenZoom();
+    currentZoom = 1.0; // Start at 100% logical zoom
+    updateZoom();
+}
+
+function updateAnnotationCount(imageName, labels, elementId) {
+    const count = labels.filter(label => label.image === imageName).length;
+    const countText = count === 1 ? '1 annotation' : `${count} annotations`;
+
+    // Update specific element
+    if (elementId) {
+        const elem = document.getElementById(elementId);
+        if (elem) elem.textContent = countText;
+    }
+}
+
+function setupCanvas(imageSrc, canvasId, imageName, labels) {
+    const c = document.getElementById(canvasId);
+    const ctx = c.getContext("2d");
+
+    let clicked = false;
+    let fPoint = {};
+    let scaleX = 1;
+    let scaleY = 1;
+    let canvasWidth, canvasHeight;
+
+    function drawLabels(id, centerX, centerY, width, height) {
+        // Adjust coordinates for tr_int_full cropping (subtract the 150px cropped from top)
+        let adjustedCenterY = centerY;
+        if (imageName.includes('-tr_int_full.png')) {
+            adjustedCenterY = centerY - 150; // Subtract the 150 pixels cropped from top
+        }
+
+        // Scale coordinates to canvas size
+        const scaledCenterX = centerX * scaleX;
+        const scaledCenterY = adjustedCenterY * scaleY;
+        const scaledWidth = width * scaleX;
+        const scaledHeight = height * scaleY;
+
+        // Convert center/width/height back to corner coordinates for drawing
+        const xMin = scaledCenterX - scaledWidth / 2;
+        const yMin = scaledCenterY - scaledHeight / 2;
+
+        ctx.strokeStyle = "#ff8c00";  // Orange for better visibility
+        ctx.fillStyle = "#ff8c00";
+        ctx.lineWidth = 2;  // Thinner lines
+        ctx.strokeRect(xMin, yMin, scaledWidth, scaledHeight);
+
+        // Draw ID label with background - REDUCED FONT SIZE
+        ctx.font = "bold 10px Arial";  // Reduced by 60% from 24px to ~10px
+        const text = "ID: " + id;
+        const textWidth = ctx.measureText(text).width;
+        const textHeight = 14;  // Reduced height proportionally
+
+        // Calculate label position to avoid overlaps (per canvas)
+        let labelX = xMin;
+        let labelY = yMin - textHeight;
+
+        // Check for overlaps with existing labels and adjust position
+        const labelSpacing = textHeight + 2; // Small gap between labels
+        const canvasKey = `canvas_${imageName}`; // Unique key per image
+        if (!window.canvasLabels) window.canvasLabels = {};
+        if (!window.canvasLabels[canvasKey]) window.canvasLabels[canvasKey] = [];
+        const existingLabels = window.canvasLabels[canvasKey];
+
+        // Find a non-overlapping position
+        let attempts = 0;
+        while (attempts < 10) {
+            let overlaps = false;
+            for (let existing of existingLabels) {
+                if (Math.abs(labelX - existing.x) < textWidth + 10 &&
+                    Math.abs(labelY - existing.y) < textHeight + 2) {
+                    overlaps = true;
+                    break;
+                }
+            }
+            if (!overlaps) break;
+
+            // Try different positions
+            if (attempts < 3) {
+                labelY -= labelSpacing; // Move up
+            } else if (attempts < 6) {
+                labelY = yMin + scaledHeight + 2; // Move below box
+                labelX = xMin + (attempts - 3) * (textWidth + 5); // Spread horizontally
+            } else {
+                labelX += textWidth + 5; // Move right
+            }
+            attempts++;
+        }
+
+        // Store this label position for this specific canvas
+        window.canvasLabels[canvasKey].push({x: labelX, y: labelY, width: textWidth, height: textHeight});
+
+        // Background for text
+        ctx.fillStyle = "rgba(255, 140, 0, 0.9)";
+        ctx.fillRect(labelX, labelY, textWidth + 8, textHeight);
+
+        // Text
+        ctx.fillStyle = "white";
+        ctx.fillText(text, labelX + 4, labelY + textHeight - 4);
+    }
+
+    const image = new Image();
+    image.onload = function () {
+        // Determine canvas size and scaling based on image type
+        if (imageName.includes('sr_int_full.png')) {
+            // Scale sr_int_full images to 416x416
+            canvasWidth = 416;
+            canvasHeight = 416;
+            scaleX = 416 / image.width;
+            scaleY = 416 / image.height;
+        } else if (imageName.includes('-tr_int_full.png')) {
+            // Crop 150 pixels from top and bottom of tr_int_full images
+            canvasWidth = image.width;
+            canvasHeight = image.height - 300; // Remove 150px from top + 150px from bottom
+            scaleX = 1;
+            scaleY = 1;
+        } else {
+            // Default behavior for other images (tr_line, etc.)
+            canvasWidth = image.width;
+            canvasHeight = image.height;
+            scaleX = 1;
+            scaleY = 1;
+        }
+
+        // Set canvas dimensions
+        ctx.canvas.width = canvasWidth;
+        ctx.canvas.height = canvasHeight;
+        c.width = canvasWidth;
+        c.height = canvasHeight;
+
+        // Draw image - crop tr_int_full, scaling for others
+        if (imageName.includes('-tr_int_full.png')) {
+            // Crop 150 pixels from top and bottom of tr_int_full images
+            const cropTop = 150;
+            const cropBottom = 150;
+            const sourceY = cropTop;
+            const sourceHeight = image.height - cropTop - cropBottom;
+            ctx.drawImage(image, 0, sourceY, image.width, sourceHeight, 0, 0, canvasWidth, canvasHeight);
+        } else {
+            // Default scaling for other image types
+            ctx.drawImage(image, 0, 0, canvasWidth, canvasHeight);
+        }
+
+        // Clear previous label positions for this specific canvas and draw labels with scaling
+        const canvasKey = `canvas_${imageName}`;
+        if (!window.canvasLabels) window.canvasLabels = {};
+        window.canvasLabels[canvasKey] = []; // Reset label positions for this canvas only
+        for (let label of labels) {
+            const displayId = label.id || label.temp_id;
+            const idType = label.id ? 'Class' : 'Temp';
+            drawLabels(`${idType} ${displayId}`, label.centerX, label.centerY, label.width, label.height);
+        }
+    };
+    image.src = imageSrc;
+
+    c.onclick = function (e) {
+        // Get click coordinates relative to canvas
+        const canvasX = (canvasWidth / c.scrollWidth) * e.offsetX;
+        const canvasY = (canvasHeight / c.scrollHeight) * e.offsetY;
+
+        // Convert canvas coordinates back to original image coordinates
+        let x = canvasX / scaleX;
+        let y = canvasY / scaleY;
+
+        // Adjust for cropping in tr_int_full images (add back the 150px cropped from top)
+        if (imageName.includes('-tr_int_full.png')) {
+            y += 150; // Add back the 150 pixels cropped from top
+        }
+
+        if (!clicked) {
+            // First click - draw a larger, more visible marker (on canvas coordinates)
+            ctx.strokeStyle = "#ff8c00";
+            ctx.fillStyle = "#ff8c00";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(canvasX, canvasY, 8, 0, 2 * Math.PI, false);
+            ctx.fill();
+
+            // Add crosshair for precision (on canvas coordinates)
+            ctx.beginPath();
+            ctx.moveTo(canvasX - 15, canvasY);
+            ctx.lineTo(canvasX + 15, canvasY);
+            ctx.moveTo(canvasX, canvasY - 15);
+            ctx.lineTo(canvasX, canvasY + 15);
+            ctx.stroke();
+
+            fPoint = { x, y };  // Store original image coordinates
+            c.style.cursor = 'crosshair';
+        } else {
+            let xMin = Math.min(fPoint.x, x);
+            let xMax = Math.max(fPoint.x, x);
+            let yMin = Math.min(fPoint.y, y);
+            let yMax = Math.max(fPoint.y, y);
+
+            // Ensure minimum box size (in original image coordinates)
+            if (Math.abs(xMax - xMin) < 10 || Math.abs(yMax - yMin) < 10) {
+                alert('Bounding box too small! Please make it larger.');
+                clicked = false;
+                c.style.cursor = 'default';
+                // Redraw image to remove the marker
+                if (imageName.includes('-tr_int_full.png')) {
+                    // Crop 150 pixels from top and bottom of tr_int_full images
+                    const cropTop = 150;
+                    const cropBottom = 150;
+                    const sourceY = cropTop;
+                    const sourceHeight = image.height - cropTop - cropBottom;
+                    ctx.drawImage(image, 0, sourceY, image.width, sourceHeight, 0, 0, canvasWidth, canvasHeight);
+                } else {
+                    ctx.drawImage(image, 0, 0, canvasWidth, canvasHeight);
+                }
+                // Clear canvas-specific label positions before redrawing
+                const canvasKey = `canvas_${imageName}`;
+                if (!window.canvasLabels) window.canvasLabels = {};
+                window.canvasLabels[canvasKey] = [];
+                for (let label of labels) {
+                    const displayId = label.id || label.temp_id;
+                    const idType = label.id ? 'Class' : 'Temp';
+                    drawLabels(`${idType} ${displayId}`, label.centerX, label.centerY, label.width, label.height);
+                }
+                return;
+            }
+
+            const nextId = labels.length + 1;
+            // Send original image coordinates to server
+            window.location.replace(`/add/${nextId}?image=${encodeURIComponent(imageName)}&xMin=${xMin}&xMax=${xMax}&yMin=${yMin}&yMax=${yMax}`);
+        }
+
+        clicked = !clicked;
+        if (!clicked) {
+            c.style.cursor = 'default';
+        }
+    };
+}
+
+// Initialize canvases for current 3 images
+{% for img in current_images %}
+    {% set img_labels = labels|selectattr('image', 'equalto', img)|list %}
+    setupCanvas("/image/{{ img }}", "canvas_{{ loop.index0 }}", "{{ img }}", {{ img_labels|tojson|safe }});
+    updateAnnotationCount("{{ img }}", {{ img_labels|tojson|safe }}, "count_{{ loop.index0 }}");
+{% endfor %}
+</script>
+</body>
+</html>
