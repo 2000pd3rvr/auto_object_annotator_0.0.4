@@ -405,7 +405,7 @@ def tagger():
         hf_all_time_visits = None
 
     try:
-    return render_template(
+        return render_template(
         'tagger.html',
         has_prev_folder=has_prev_folder,
         has_next_folder=has_next_folder,
