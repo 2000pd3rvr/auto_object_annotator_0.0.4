@@ -5,7 +5,13 @@ import argparse
 from flask import Flask, redirect, url_for, request
 from flask import render_template
 from flask import send_file
-import os  
+import os
+from datasets import load_dataset
+from huggingface_hub import hf_hub_download
+from io import BytesIO
+from PIL import Image
+import tempfile
+import shutil  
 
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -360,28 +366,179 @@ def label(temp_id):
 
 @app.route('/image/<path:f>')
 def images(f):
-    images = app.config['IMAGES']
-    return send_file(os.path.join(images, f))
+    # Check if using HuggingFace dataset
+    if app.config.get("USE_HF_DATASET", False):
+        # Load image from HuggingFace dataset
+        try:
+            from huggingface_hub import hf_hub_download
+            
+            dataset_name = app.config.get("HF_DATASET_NAME", "0001AMA/multimodal_data_annotator_dataset")
+            cache_dir = app.config.get("CACHE_DIR", None)
+            
+            # Try to find the file path
+            file_path = f
+            dataset_files = app.config.get("HF_DATASET_FILES", {})
+            
+            # Try exact match first
+            if f not in dataset_files:
+                # Try to find by matching path
+                for path in dataset_files:
+                    if path.endswith(f) or f in path:
+                        file_path = path
+                        break
+            
+            # Download file from HuggingFace
+            try:
+                local_path = hf_hub_download(
+                    repo_id=dataset_name,
+                    filename=file_path,
+                    repo_type="dataset",
+                    cache_dir=cache_dir
+                )
+                
+                if os.path.exists(local_path):
+                    return send_file(local_path)
+            except Exception as download_error:
+                print(f"Error downloading file {file_path}: {download_error}")
+                # Try alternative: download to cache and serve
+                try:
+                    # Use cache_dir if available
+                    cache_file = os.path.join(cache_dir or tempfile.gettempdir(), file_path.replace('/', '_'))
+                    if not os.path.exists(cache_file):
+                        local_path = hf_hub_download(
+                            repo_id=dataset_name,
+                            filename=file_path,
+                            repo_type="dataset"
+                        )
+                        # Copy to cache
+                        os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+                        shutil.copy2(local_path, cache_file)
+                    else:
+                        local_path = cache_file
+                    
+                    return send_file(local_path)
+                except Exception as e2:
+                    print(f"Alternative download also failed: {e2}")
+                    
+        except Exception as e:
+            print(f"Error loading image from dataset: {e}")
+            import traceback
+            traceback.print_exc()
+            # Fallback to local file if available
+            pass
+    
+    # Fallback to local file system
+    images_dir = app.config.get('IMAGES', '')
+    if images_dir:
+        file_path = os.path.join(images_dir, f)
+        if os.path.exists(file_path):
+            return send_file(file_path)
+    
+    return "Image not found", 404
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--dir', type=str, default='/Users/pd3rvr/Documents/Data_out', help='specify the images directory')
-    parser.add_argument("--out")
-    args = parser.parse_args()
-    directory = args.dir
-    if directory[-1] != "/":
-        directory += "/"
-    app.config["IMAGES"] = directory
-    app.config["LABELS"] = []
-    app.config["CLASS_TO_ID"] = {}  # Maps class names to IDs
-    app.config["NEXT_CLASS_ID"] = 1  # Next available class ID
+def load_from_huggingface_dataset(dataset_name="0001AMA/multimodal_data_annotator_dataset"):
+    """Load and process images from HuggingFace dataset"""
+    print(f"Loading dataset from HuggingFace: {dataset_name}")
+    
+    try:
+        from huggingface_hub import list_repo_files, hf_hub_download
+        
+        # List all files in the dataset repository
+        print("Listing files in dataset repository...")
+        repo_files = list_repo_files(repo_id=dataset_name, repo_type="dataset")
+        print(f"Found {len(repo_files)} files in repository")
+        
+        # Filter PNG files only
+        png_files = [f for f in repo_files if f.endswith('.png')]
+        print(f"Found {len(png_files)} PNG files")
+        
+        # Create a cache directory for images
+        cache_dir = os.path.join(tempfile.gettempdir(), "hf_dataset_cache")
+        os.makedirs(cache_dir, exist_ok=True)
+        app.config["CACHE_DIR"] = cache_dir
+        
+        # Process files to group by folder and file ID
+        folder_sets = []
+        required_suffixes = ['sr_int_full.png', '-tr_line.png', '-tr_int_full.png']
+        
+        # Group files by folder and file ID
+        folder_files = {}  # {folder_name: {file_id: {suffix: file_path}}}
+        
+        for file_path in png_files:
+            # Extract folder name and filename
+            path_parts = file_path.split('/')
+            if len(path_parts) < 2:
+                continue
+            
+            folder_name = path_parts[0]
+            filename = path_parts[-1]
+            
+            # Check if file matches required suffixes
+            matched_suffix = None
+            for suffix in required_suffixes:
+                if filename.endswith(suffix):
+                    matched_suffix = suffix
+                    break
+            
+            if not matched_suffix:
+                continue
+            
+            # Extract file ID prefix (everything before the first '-')
+            if '-' in filename:
+                file_id = filename.split('-')[0]
+            else:
+                continue
+            
+            # Initialize folder structure
+            if folder_name not in folder_files:
+                folder_files[folder_name] = {}
+            if file_id not in folder_files[folder_name]:
+                folder_files[folder_name][file_id] = {}
+            
+            # Store file path
+            folder_files[folder_name][file_id][matched_suffix] = file_path
+        
+        # Create folder sets with valid image sets
+        for folder_name, file_ids in folder_files.items():
+            valid_image_sets = []
+            for file_id, images in file_ids.items():
+                # Check if all three required suffixes are present
+                if all(suffix in images for suffix in required_suffixes):
+                    valid_image_sets.append({
+                        'file_id': file_id,
+                        'sr_int_full': images['sr_int_full.png'],
+                        'tr_line': images['-tr_line.png'],
+                        'tr_int_full': images['-tr_int_full.png']
+                    })
+                    print(f"DEBUG: Created valid image set for file_id '{file_id}' in folder '{folder_name}'")
+            
+            if valid_image_sets:
+                folder_sets.append({
+                    'folder': folder_name,
+                    'image_sets': valid_image_sets
+                })
+                print(f"DEBUG: Added folder '{folder_name}' with {len(valid_image_sets)} image sets")
+        
+        # Store file list for image serving
+        app.config["HF_DATASET_FILES"] = {f: f for f in png_files}
+        app.config["HF_DATASET_NAME"] = dataset_name
+        
+        print(f"Successfully processed {len(folder_sets)} folders with valid image sets")
+        return folder_sets
+        
+    except Exception as e:
+        print(f"Error loading HuggingFace dataset: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
 
-    # Collect folders with ALL images of the three specific types
+def load_from_local_directory(directory):
+    """Load and process images from local directory (original method)"""
     folder_sets = []
     required_suffixes = ['sr_int_full.png', '-tr_line.png', '-tr_int_full.png']
 
-    for (dirpath, dirnames, filenames) in walk(app.config["IMAGES"]):
-        if dirpath == app.config["IMAGES"]:  # Skip root directory
+    for (dirpath, dirnames, filenames) in walk(directory):
+        if dirpath == directory:  # Skip root directory
             continue
 
         # Find ALL images with required suffixes in this folder and group by file ID prefix
@@ -389,7 +546,7 @@ if __name__ == "__main__":
         for filename in filenames:
             for suffix in required_suffixes:
                 if filename.endswith(suffix):
-                    relative_path = os.path.relpath(os.path.join(dirpath, filename), app.config["IMAGES"])
+                    relative_path = os.path.relpath(os.path.join(dirpath, filename), directory)
                     found_images[suffix].append(relative_path)
 
         # Group images by their file ID prefix (everything before the first '-')
@@ -428,8 +585,44 @@ if __name__ == "__main__":
                 'image_sets': valid_image_sets
             })
 
+    return folder_sets
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dir', type=str, default=None, help='specify the images directory (optional, uses HF dataset if not provided)')
+    parser.add_argument("--out")
+    args = parser.parse_args()
+    
+    app.config["LABELS"] = []
+    app.config["CLASS_TO_ID"] = {}  # Maps class names to IDs
+    app.config["NEXT_CLASS_ID"] = 1  # Next available class ID
+    
+    # Check if running on HuggingFace Spaces or if no local directory specified
+    is_hf_space = os.getenv("SPACE_ID") is not None
+    use_hf_dataset = args.dir is None or is_hf_space
+    
+    if use_hf_dataset:
+        print("===== Application Startup at " + str(os.popen('date').read().strip()) + " =====")
+        print("Loading from HuggingFace dataset...")
+        app.config["USE_HF_DATASET"] = True
+        folder_sets = load_from_huggingface_dataset("0001AMA/multimodal_data_annotator_dataset")
+        app.config["IMAGES"] = ""  # Not using local directory
+    else:
+        print("Loading from local directory...")
+        app.config["USE_HF_DATASET"] = False
+        directory = args.dir
+        if directory[-1] != "/":
+            directory += "/"
+        app.config["IMAGES"] = directory
+        folder_sets = load_from_local_directory(directory)
+
     if not folder_sets:
         print("No folders found with all three required image types (sr_int_full.png, -tr_line.png, -tr_int_full.png)")
+        if use_hf_dataset:
+            print("This may be due to:")
+            print("1. Dataset not fully uploaded yet")
+            print("2. Dataset structure doesn't match expected format")
+            print("3. Network issues loading the dataset")
         exit()
 
     app.config["FOLDER_SETS"] = folder_sets
