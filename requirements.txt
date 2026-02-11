@@ -2,4 +2,5 @@ flask
 datasets
 huggingface_hub
 Pillow
+requests
 

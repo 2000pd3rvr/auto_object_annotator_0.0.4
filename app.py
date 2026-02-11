@@ -5,13 +5,18 @@ import argparse
 from flask import Flask, redirect, url_for, request
 from flask import render_template
 from flask import send_file
-import os  
+import os
 from datasets import load_dataset
 from huggingface_hub import hf_hub_download
 from io import BytesIO
 from PIL import Image
 import tempfile
-import shutil  
+import shutil
+import json
+from datetime import datetime
+import hashlib
+import threading
+import requests
 
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -19,10 +24,15 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 @app.route('/')
 def index():
     """Redirect root URL to tagger"""
+    # Track visit
+    track_visit()
     return redirect(url_for('tagger'))
 
 @app.route('/tagger')
 def tagger():
+    # Track visit
+    track_visit()
+    
     # Check if dataset was loaded successfully
     folder_sets = app.config.get("FOLDER_SETS", [])
     if not folder_sets:
