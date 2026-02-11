@@ -318,8 +318,8 @@ def tagger():
 
         # Get image sets for current folder
         image_sets = current_folder_set['image_sets']
-            if not isinstance(image_sets, list) or len(image_sets) == 0:
-                raise ValueError(f"No image sets found in folder {current_folder_set.get('folder', 'unknown')}")
+        if not isinstance(image_sets, list) or len(image_sets) == 0:
+            raise ValueError(f"No image sets found in folder {current_folder_set.get('folder', 'unknown')}")
             
         max_sets = len(image_sets)
 
