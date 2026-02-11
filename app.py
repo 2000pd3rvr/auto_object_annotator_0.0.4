@@ -320,36 +320,83 @@ def tagger():
         </html>
         """, 500
     
-    # Loop back to start if we've gone past the end
+    # Ensure HEAD is initialized and within bounds
+    if "HEAD" not in app.config:
+        app.config["HEAD"] = 0
+    if app.config["HEAD"] < 0:
+        app.config["HEAD"] = 0
     if app.config["HEAD"] >= len(folder_sets):
         app.config["HEAD"] = 0
         app.config["IMAGE_SET_INDEX"] = 0
         print("Reached end of folders, looping back to first folder")
 
-    directory = app.config.get('IMAGES', '')
-    current_folder_set = folder_sets[app.config["HEAD"]]
+    # Safely access current folder set
+    try:
+        directory = app.config.get('IMAGES', '')
+        current_folder_set = folder_sets[app.config["HEAD"]]
+        
+        # Validate folder set structure
+        if not isinstance(current_folder_set, dict) or 'image_sets' not in current_folder_set:
+            raise ValueError(f"Invalid folder set structure at index {app.config['HEAD']}")
+        
+        # Get current image set index (default to 0 if not set)
+        image_set_index = app.config.get("IMAGE_SET_INDEX", 0)
+        if image_set_index < 0:
+            image_set_index = 0
+            app.config["IMAGE_SET_INDEX"] = 0
 
-    # Get current image set index (default to 0 if not set)
-    image_set_index = app.config.get("IMAGE_SET_INDEX", 0)
+        # Get image sets for current folder
+        image_sets = current_folder_set['image_sets']
+        if not isinstance(image_sets, list) or len(image_sets) == 0:
+            raise ValueError(f"No image sets found in folder {current_folder_set.get('folder', 'unknown')}")
+        
+        max_sets = len(image_sets)
 
-    # Get image sets for current folder
-    image_sets = current_folder_set['image_sets']
-    max_sets = len(image_sets)
+        # Ensure image_set_index is within bounds
+        if image_set_index >= max_sets:
+            image_set_index = 0
+            app.config["IMAGE_SET_INDEX"] = 0
 
-    # Ensure image_set_index is within bounds
-    if image_set_index >= max_sets:
-        image_set_index = 0
-        app.config["IMAGE_SET_INDEX"] = 0
-
-    # Get current set of 3 images (all with same file ID prefix)
-    current_images = []
-    if image_set_index < max_sets:
-        current_set = image_sets[image_set_index]
-        current_images = [
-            current_set['sr_int_full'],
-            current_set['tr_line'],
-            current_set['tr_int_full']
-        ]
+        # Get current set of 3 images (all with same file ID prefix)
+        current_images = []
+        if image_set_index < max_sets:
+            current_set = image_sets[image_set_index]
+            if not isinstance(current_set, dict):
+                raise ValueError(f"Invalid image set structure at index {image_set_index}")
+            
+            # Validate required keys exist
+            required_keys = ['sr_int_full', 'tr_line', 'tr_int_full']
+            for key in required_keys:
+                if key not in current_set:
+                    raise ValueError(f"Missing required image key '{key}' in image set {image_set_index}")
+            
+            current_images = [
+                current_set['sr_int_full'],
+                current_set['tr_line'],
+                current_set['tr_int_full']
+            ]
+        else:
+            raise ValueError(f"Image set index {image_set_index} out of bounds (max: {max_sets})")
+            
+    except (IndexError, KeyError, ValueError) as e:
+        print(f"Error accessing folder/image data: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Data Access Error</title>
+            <meta charset="UTF-8">
+        </head>
+        <body>
+            <h1>Data Access Error</h1>
+            <p>An error occurred while accessing folder/image data.</p>
+            <p>Error: {str(e)}</p>
+            <p>Please check the Space logs for more details.</p>
+        </body>
+        </html>
+        """, 500
 
     labels = app.config["LABELS"]
     has_prev_folder = app.config["HEAD"] > 0
