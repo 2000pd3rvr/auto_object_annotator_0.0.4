@@ -273,6 +273,7 @@ def handle_exception(e):
 
 @app.route('/tagger')
 def tagger():
+    print("DEBUG: tagger() route called")
     try:
         # Track visit
         track_visit()
@@ -282,6 +283,7 @@ def tagger():
     
     # Check if dataset was loaded successfully
     folder_sets = app.config.get("FOLDER_SETS", [])
+    print(f"DEBUG: folder_sets length: {len(folder_sets)}")
     if not folder_sets:
         error_msg = app.config.get("DATASET_ERROR", "No folders found with all three required image types (sr_int_full.png, -tr_line.png, -tr_int_full.png)")
         return f"""
@@ -451,30 +453,33 @@ def tagger():
         print(f"HF All time visits fetch failed (keeping blank): {e}")
         hf_all_time_visits = None
 
+    print(f"DEBUG: About to render template. current_folder_set: {current_folder_set is not None}, current_images: {len(current_images)}")
     try:
-        return render_template(
-        'tagger.html',
-        has_prev_folder=has_prev_folder,
-        has_next_folder=has_next_folder,
-        has_prev_set=has_prev_set,
-        has_next_set=has_next_set,
-        directory=directory,
-        current_folder_set=current_folder_set,
-        current_folder=current_folder_set['folder'],
-        current_images=current_images,
-        labels=labels,
-        head=app.config["HEAD"] + 1,
-        len=len(app.config["FOLDER_SETS"]),
-        image_set_index=image_set_index + 1,
-        max_sets=max_sets,
-        total_visits=total_visits,
-        unique_visitors=unique_count,
-        countries_count=countries_count,
-        hf_all_time_visits=hf_all_time_visits
+        result = render_template(
+            'tagger.html',
+            has_prev_folder=has_prev_folder,
+            has_next_folder=has_next_folder,
+            has_prev_set=has_prev_set,
+            has_next_set=has_next_set,
+            directory=directory,
+            current_folder_set=current_folder_set,
+            current_folder=current_folder_set['folder'] if current_folder_set else '',
+            current_images=current_images,
+            labels=labels,
+            head=app.config["HEAD"] + 1,
+            len=len(app.config["FOLDER_SETS"]),
+            image_set_index=image_set_index + 1,
+            max_sets=max_sets,
+            total_visits=total_visits,
+            unique_visitors=unique_count,
+            countries_count=countries_count,
+            hf_all_time_visits=hf_all_time_visits
         )
+        print("DEBUG: Template rendered successfully")
+        return result
     except Exception as e:
         # If template rendering fails, return a simple error page
-        print(f"Error rendering template: {e}")
+        print(f"ERROR rendering template: {e}")
         import traceback
         traceback.print_exc()
         return f"""
