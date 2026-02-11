@@ -1102,7 +1102,7 @@ if __name__ == "__main__":
         app.config["FOLDER_SETS"] = []
         app.config["DATASET_ERROR"] = error_msg
     else:
-    app.config["FOLDER_SETS"] = folder_sets
+        app.config["FOLDER_SETS"] = folder_sets
         app.config["DATASET_ERROR"] = None
     app.config["HEAD"] = 0
     app.config["IMAGE_SET_INDEX"] = 0
