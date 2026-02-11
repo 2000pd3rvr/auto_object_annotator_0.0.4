@@ -363,15 +363,6 @@ def tagger():
         total_visits = stats_data.get('total_visits', 0)
         unique_count = len(stats_data['unique_visitors']) if isinstance(stats_data.get('unique_visitors'), set) else len(stats_data.get('unique_visitors', []))
         countries_count = len(stats_data.get('countries', {}))
-        # Try to get actual HF Space visit count, fallback to app's tracking
-        # Use a short timeout to avoid blocking the page load
-        try:
-            hf_space_visits = get_hf_space_visits()
-            if hf_space_visits is None:
-                hf_space_visits = total_visits  # Fallback to app's own tracking
-        except Exception as e:
-            print(f"Error fetching HF Space visits: {e}")
-            hf_space_visits = total_visits  # Fallback to app's own tracking
     except Exception as e:
         print(f"Error loading stats: {e}")
         import traceback
@@ -379,9 +370,21 @@ def tagger():
         total_visits = 0
         unique_count = 0
         countries_count = 0
-        hf_space_visits = 0
+    
+    # Try to get actual HF Space visit count, fallback to app's tracking
+    # Make this completely non-blocking - if it fails, just use app's tracking
+    hf_space_visits = total_visits  # Default fallback
+    try:
+        hf_space_visits_result = get_hf_space_visits()
+        if hf_space_visits_result is not None and hf_space_visits_result > 0:
+            hf_space_visits = hf_space_visits_result
+    except Exception as e:
+        # Silently fail - use app's tracking as fallback
+        print(f"HF Space visits fetch failed (using app tracking): {e}")
+        pass
 
-    return render_template(
+    try:
+        return render_template(
         'tagger.html',
         has_prev_folder=has_prev_folder,
         has_next_folder=has_next_folder,
@@ -400,7 +403,27 @@ def tagger():
         unique_visitors=unique_count,
         countries_count=countries_count,
         hf_space_visits=hf_space_visits
-    )
+        )
+    except Exception as e:
+        # If template rendering fails, return a simple error page
+        print(f"Error rendering template: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Application Error</title>
+            <meta charset="UTF-8">
+        </head>
+        <body>
+            <h1>Application Error</h1>
+            <p>An error occurred while rendering the page.</p>
+            <p>Error: {str(e)}</p>
+            <p>Please check the Space logs for more details.</p>
+        </body>
+        </html>
+        """, 500
 
 def save_annotations_to_csv():
     """Save all labeled annotations to CSV file"""
