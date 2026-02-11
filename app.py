@@ -312,9 +312,9 @@ def tagger():
 
         # Get current image set index (default to 0 if not set)
         image_set_index = app.config.get("IMAGE_SET_INDEX", 0)
-                if image_set_index < 0:
-                    image_set_index = 0
-                    app.config["IMAGE_SET_INDEX"] = 0
+        if image_set_index < 0:
+            image_set_index = 0
+            app.config["IMAGE_SET_INDEX"] = 0
 
         # Get image sets for current folder
         image_sets = current_folder_set['image_sets']
