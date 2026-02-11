@@ -135,10 +135,27 @@ def get_hf_space_visits(space_id="0001AMA/auto_object_annotator_0.0.4"):
     """Try to get HuggingFace Space visit count from the Space page or metrics API"""
     import re
     
-    # Method 1: Try the metrics API endpoint (may require auth, but worth trying)
+    # Get HuggingFace token from environment (automatically provided in Spaces)
+    hf_token = os.getenv("HF_TOKEN") or os.getenv("HUGGING_FACE_HUB_TOKEN")
+    
+    # If no token in env, try to get it from huggingface_hub
+    if not hf_token:
+        try:
+            from huggingface_hub import HfApi
+            api = HfApi()
+            hf_token = api.token
+        except:
+            pass
+    
+    # Prepare headers with authentication if token is available
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    if hf_token:
+        headers['Authorization'] = f'Bearer {hf_token}'
+    
+    # Method 1: Try the metrics API endpoint with authentication
     try:
         metrics_url = f"https://huggingface.co/api/spaces/{space_id}/metrics"
-        response = requests.get(metrics_url, timeout=2)  # Short timeout to avoid blocking
+        response = requests.get(metrics_url, timeout=2, headers=headers)  # Short timeout to avoid blocking
         if response.status_code == 200:
             data = response.json()
             # Look for visit count in the response
@@ -147,13 +164,18 @@ def get_hf_space_visits(space_id="0001AMA/auto_object_annotator_0.0.4"):
                 for key in ['views', 'visits', 'total_views', 'total_visits', 'viewCount', 'visitCount']:
                     if key in data:
                         return int(data[key])
+        elif response.status_code == 401:
+            print("HF API: Authentication required but token may be invalid")
+        elif response.status_code == 403:
+            print("HF API: Access forbidden - may need owner permissions")
     except Exception as e:
+        print(f"HF API request failed: {e}")  # Debug logging
         pass  # Silently fail - will try scraping
     
     # Method 2: Scrape from the Space page HTML
     try:
         space_url = f"https://huggingface.co/spaces/{space_id}"
-        response = requests.get(space_url, timeout=2, headers={'User-Agent': 'Mozilla/5.0'})  # Short timeout
+        response = requests.get(space_url, timeout=2, headers=headers)  # Use same headers (with auth if available)
         if response.status_code == 200:
             html = response.text
             
