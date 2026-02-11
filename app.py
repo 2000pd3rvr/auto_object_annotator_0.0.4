@@ -569,17 +569,17 @@ def stats():
         <style>
             body {{ font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5; }}
             .container {{ max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-            h1 {{ color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px; }}
+            h1 {{ color: #333; border-bottom: 3px solid #6c757d; padding-bottom: 10px; }}
             h2 {{ color: #555; margin-top: 30px; }}
-            .stat-box {{ background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #007bff; }}
-            .stat-number {{ font-size: 36px; font-weight: bold; color: #007bff; }}
+            .stat-box {{ background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #6c757d; }}
+            .stat-number {{ font-size: 36px; font-weight: bold; color: #495057; }}
             .stat-label {{ font-size: 14px; color: #666; margin-top: 5px; }}
             .table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
             .table th, .table td {{ padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }}
-            .table th {{ background-color: #007bff; color: white; }}
+            .table th {{ background-color: #6c757d; color: white; }}
             .table tr:hover {{ background-color: #f5f5f5; }}
-            .back-link {{ display: inline-block; margin-top: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }}
-            .back-link:hover {{ background: #0056b3; }}
+            .back-link {{ display: inline-block; margin-top: 20px; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; }}
+            .back-link:hover {{ background: #5a6268; }}
             .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 20px 0; }}
         </style>
     </head>
