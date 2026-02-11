@@ -689,12 +689,29 @@ function setupCanvas(imageSrc, canvasId, imageName, labels) {
             scaleX = 416 / image.width;
             scaleY = 416 / image.height;
         } else if (imageName.includes('-tr_int_full.png')) {
-            // Crop 150 pixels from top and bottom of tr_int_full images, then scale by 30% (1.3x)
+            // Crop 150 pixels from top and bottom of tr_int_full images, then scale to fit container while maintaining aspect ratio
             const croppedHeight = image.height - 300; // Remove 150px from top + 150px from bottom
-            canvasWidth = image.width * 1.3; // Scale 30% larger
-            canvasHeight = croppedHeight * 1.3; // Scale 30% larger
-            scaleX = 1.3; // Scale factor for coordinate conversion
-            scaleY = 1.3; // Scale factor for coordinate conversion
+            const croppedWidth = image.width;
+            const aspectRatio = croppedWidth / croppedHeight;
+            
+            // Get container dimensions to maintain aspect ratio
+            const container = c.parentElement;
+            const maxWidth = container.clientWidth;
+            const maxHeight = container.clientHeight;
+            
+            // Calculate dimensions that fit container while maintaining aspect ratio
+            let scaledWidth = maxWidth;
+            let scaledHeight = maxWidth / aspectRatio;
+            
+            if (scaledHeight > maxHeight) {
+                scaledHeight = maxHeight;
+                scaledWidth = maxHeight * aspectRatio;
+            }
+            
+            canvasWidth = scaledWidth;
+            canvasHeight = scaledHeight;
+            scaleX = scaledWidth / croppedWidth; // Scale factor for coordinate conversion
+            scaleY = scaledHeight / croppedHeight; // Scale factor for coordinate conversion
         } else {
             // Default behavior for other images (tr_line, etc.)
             canvasWidth = image.width;
