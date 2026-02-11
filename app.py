@@ -249,10 +249,36 @@ def index():
     track_visit()
     return redirect(url_for('tagger'))
 
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Global error handler to prevent blank screens"""
+    print(f"Unhandled exception: {e}")
+    import traceback
+    traceback.print_exc()
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Application Error</title>
+        <meta charset="UTF-8">
+    </head>
+    <body>
+        <h1>Application Error</h1>
+        <p>An unexpected error occurred.</p>
+        <p>Error: {str(e)}</p>
+        <p>Please check the Space logs for more details.</p>
+    </body>
+    </html>
+    """, 500
+
 @app.route('/tagger')
 def tagger():
-    # Track visit
-    track_visit()
+    try:
+        # Track visit
+        track_visit()
+    except Exception as e:
+        print(f"Error in track_visit: {e}")
+        # Continue even if tracking fails
     
     # Check if dataset was loaded successfully
     folder_sets = app.config.get("FOLDER_SETS", [])
@@ -301,9 +327,15 @@ def tagger():
         app.config["IMAGE_SET_INDEX"] = 0
         print("Reached end of folders, looping back to first folder")
 
+    # Initialize variables with defaults
+    directory = app.config.get('IMAGES', '')
+    current_folder_set = None
+    image_set_index = 0
+    max_sets = 0
+    current_images = []
+    
     # Safely access current folder set
     try:
-        directory = app.config.get('IMAGES', '')
         current_folder_set = folder_sets[app.config["HEAD"]]
         
         # Validate folder set structure
@@ -329,7 +361,6 @@ def tagger():
             app.config["IMAGE_SET_INDEX"] = 0
 
         # Get current set of 3 images (all with same file ID prefix)
-        current_images = []
         if image_set_index < max_sets:
             current_set = image_sets[image_set_index]
             if not isinstance(current_set, dict):
@@ -365,6 +396,22 @@ def tagger():
             <p>An error occurred while accessing folder/image data.</p>
             <p>Error: {str(e)}</p>
             <p>Please check the Space logs for more details.</p>
+        </body>
+        </html>
+        """, 500
+
+    # Ensure we have valid data before proceeding
+    if current_folder_set is None:
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Data Error</title>
+            <meta charset="UTF-8">
+        </head>
+        <body>
+            <h1>Data Error</h1>
+            <p>Unable to load folder data.</p>
         </body>
         </html>
         """, 500
