@@ -689,23 +689,28 @@ function setupCanvas(imageSrc, canvasId, imageName, labels) {
             scaleX = 416 / image.width;
             scaleY = 416 / image.height;
         } else if (imageName.includes('-tr_int_full.png')) {
-            // Crop 150 pixels from top and bottom of tr_int_full images, then scale to fit container while maintaining aspect ratio
+            // Crop 150 pixels from top and bottom of tr_int_full images, then scale by 30% (1.3x) with constrained proportions
             const croppedHeight = image.height - 300; // Remove 150px from top + 150px from bottom
             const croppedWidth = image.width;
             const aspectRatio = croppedWidth / croppedHeight;
             
-            // Get container dimensions to maintain aspect ratio
+            // Scale by 30% (1.3x) while maintaining aspect ratio
+            const baseScale = 1.3;
+            let scaledWidth = croppedWidth * baseScale;
+            let scaledHeight = croppedHeight * baseScale;
+            
+            // Ensure it fits within container while maintaining aspect ratio
             const container = c.parentElement;
             const maxWidth = container.clientWidth;
             const maxHeight = container.clientHeight;
             
-            // Calculate dimensions that fit container while maintaining aspect ratio
-            let scaledWidth = maxWidth;
-            let scaledHeight = maxWidth / aspectRatio;
-            
-            if (scaledHeight > maxHeight) {
-                scaledHeight = maxHeight;
-                scaledWidth = maxHeight * aspectRatio;
+            // If scaled dimensions exceed container, scale down proportionally
+            if (scaledWidth > maxWidth || scaledHeight > maxHeight) {
+                const scaleX = maxWidth / scaledWidth;
+                const scaleY = maxHeight / scaledHeight;
+                const scale = Math.min(scaleX, scaleY);
+                scaledWidth = scaledWidth * scale;
+                scaledHeight = scaledHeight * scale;
             }
             
             canvasWidth = scaledWidth;
