@@ -310,8 +310,8 @@ def tagger():
         if not isinstance(current_folder_set, dict) or 'image_sets' not in current_folder_set:
             raise ValueError(f"Invalid folder set structure at index {app.config['HEAD']}")
 
-    # Get current image set index (default to 0 if not set)
-    image_set_index = app.config.get("IMAGE_SET_INDEX", 0)
+        # Get current image set index (default to 0 if not set)
+        image_set_index = app.config.get("IMAGE_SET_INDEX", 0)
         if image_set_index < 0:
             image_set_index = 0
             app.config["IMAGE_SET_INDEX"] = 0
