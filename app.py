@@ -303,10 +303,13 @@ def tagger():
         total_visits = stats_data.get('total_visits', 0)
         unique_count = len(stats_data['unique_visitors']) if isinstance(stats_data.get('unique_visitors'), set) else len(stats_data.get('unique_visitors', []))
         countries_count = len(stats_data.get('countries', {}))
+        # Total Cumulative Visits = app's own tracking (cumulative since app started)
+        hf_space_visits = total_visits
     except:
         total_visits = 0
         unique_count = 0
         countries_count = 0
+        hf_space_visits = 0
 
     return render_template(
         'tagger.html',
@@ -1057,7 +1060,7 @@ if __name__ == "__main__":
         app.config["FOLDER_SETS"] = []
         app.config["DATASET_ERROR"] = error_msg
     else:
-        app.config["FOLDER_SETS"] = folder_sets
+    app.config["FOLDER_SETS"] = folder_sets
         app.config["DATASET_ERROR"] = None
     app.config["HEAD"] = 0
     app.config["IMAGE_SET_INDEX"] = 0
