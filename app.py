@@ -1004,8 +1004,8 @@ def load_from_huggingface_dataset(dataset_name="0001AMA/multimodal_data_annotato
         app.config["CACHE_DIR"] = cache_dir
         
         # Process files to group by folder and file ID
-    folder_sets = []
-    required_suffixes = ['sr_int_full.png', '-tr_line.png', '-tr_int_full.png']
+        folder_sets = []
+        required_suffixes = ['sr_int_full.png', '-tr_line.png', '-tr_int_full.png']
 
         # Group files by folder and file ID
         folder_files = {}  # {folder_name: {file_id: {suffix: file_path}}}
