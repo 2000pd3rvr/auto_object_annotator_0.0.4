@@ -10,16 +10,35 @@ app_file: app.py
 pinned: false
 ---
 
-# Image Annotation Tool
+# Spatiotemporal Object Detection Visualizer & Annotator
 
-A professional web-based annotation application for multi-view image datasets with advanced features for efficient labeling and quality assurance.
+A professional web-based dual-function application for visualizing and annotating spatiotemporal image datasets. This tool serves as both a **visualizer** for RGB spatially resolved images with their corresponding transient signals, and an **annotator** for creating bounding box annotations with minimal user input.
 
 ## 🎯 Overview
 
-This tool is designed for annotating image datasets that contain multiple views of the same objects. Each image set consists of three related images with the same file ID prefix:
-- **Surface Reflection Internal Full** (`-sr_int_full.png`)
-- **Transmission Line** (`-tr_line.png`) 
-- **Transmission Internal Full** (`-tr_int_full.png`)
+This application provides **dual functionality** for spatiotemporal object detection datasets:
+
+### 📊 **Visualizer Function**
+The tool visualizes RGB spatially resolved images alongside their corresponding transient signals:
+- **RGB Spatially Resolved Image** (`-sr_int_full.png`): Surface reflection internal full view showing spatial RGB information
+- **Transient Intensity Map** (`-tr_int_full.png`): Transmission internal full view displaying transient signal intensity across all pixels
+- **Transient Line Plots** (`-tr_line.png`): Transmission line plots showing transient signal resolved as line plots across pixels
+
+Each image set consists of three related images with the same file ID prefix, allowing synchronized visualization of spatial and temporal information.
+
+### ✏️ **Annotator Function**
+The annotation system requires only **2 coordinates** (points) made by the user to generate bounding boxes:
+- **Point-to-Point Annotation**: Click two points on any image to automatically create a bounding box
+- **Minimal Input**: No dragging required - just two clicks define the bounding box corners
+- **Multi-View Support**: Annotate on any of the three synchronized views (RGB, intensity, or line plots)
+
+### 📤 **Export for Model Training**
+The application enables export of:
+- **RGB images** with their corresponding **bounding boxes**
+- **Transient signals** (intensity maps and line plots) associated with each annotation
+- **Spatiotemporal data** formatted for object detection model training
+
+This dual functionality makes it ideal for preparing datasets for **spatiotemporal object detection model training**, where both spatial (RGB) and temporal (transient) information are crucial.
 
 ## 🚀 Key Features
 
@@ -38,11 +57,12 @@ This tool is designed for annotating image datasets that contain multiple views 
 - **Professional presentation**: Clean, focused image display
 
 ### 🏷️ **Annotation System**
-- **Bounding box annotations**: Click and drag to create rectangular annotations
+- **Two-point bounding box creation**: Simply click two points to generate rectangular annotations (no dragging required)
+- **Point-to-point annotation**: First click sets one corner, second click sets the opposite corner
 - **Class-based labeling**: Assign objects to predefined classes
 - **Class-based ID system**: Sequential IDs per class (1,2,3... for each class separately)
 - **Center-point format**: Annotations saved as x,y center coordinates plus width/height
-- **Multi-canvas support**: Annotate any of the three images in each set
+- **Multi-canvas support**: Annotate on any of the three synchronized views (RGB spatial, transient intensity, or line plots)
 
 ### 🎨 **User Interface**
 - **Orange color scheme**: Professional orange theme throughout interface
@@ -61,9 +81,11 @@ This tool is designed for annotating image datasets that contain multiple views 
 - **Gray transparent icons**: Subtle, non-intrusive zoom button appearance
 - **Per-canvas positioning**: Zoom buttons positioned on left side of each canvas
 
-### 💾 **Data Management**
+### 💾 **Data Management & Export**
 - **Auto-save functionality**: Automatically saves annotations on navigation
 - **CSV export format**: Standard CSV with image path, class, coordinates, and dimensions
+- **Spatiotemporal export**: Export RGB images with bounding boxes and their corresponding transient signals
+- **Model training ready**: Formatted output suitable for spatiotemporal object detection model training
 - **Update-safe saving**: Updates existing CSV files or creates new ones
 - **Class-based ID assignment**: Maintains separate ID sequences for each class
 
@@ -124,11 +146,19 @@ python app.py
 Access the application at: `http://127.0.0.1:6700/tagger`
 
 ### Basic Workflow
-1. **Navigate**: Use "Next Set" and "Next Folder" buttons to browse images
-2. **Annotate**: Click and drag on images to create bounding boxes
-3. **Classify**: Click class buttons to assign labels to annotations
+
+#### As a Visualizer:
+1. **Navigate**: Use "Next Set" and "Next Folder" buttons to browse through image sets
+2. **View synchronized data**: Observe RGB spatially resolved images alongside their transient intensity maps and line plots
+3. **Compare views**: Analyze spatial and temporal information simultaneously across the three synchronized views
+
+#### As an Annotator:
+1. **Create bounding boxes**: Click two points on any image (first click = corner 1, second click = opposite corner)
+2. **Classify**: Enter class name to assign labels to annotations
+3. **Multi-view annotation**: Annotate on RGB spatial view, transient intensity, or line plots - all synchronized
 4. **Auto-save**: Annotations automatically save when navigating
 5. **Review**: Use auto-play feature for quality assurance
+6. **Export**: Export RGB images with bounding boxes and corresponding transient signals for model training
 
 ### Auto-Play Usage
 1. Click the ▶️ **Play** button (green outline)
@@ -151,9 +181,22 @@ Access the application at: `http://127.0.0.1:6700/tagger`
 
 Annotations are saved to `out.csv` with the following format:
 ```csv
-image_path,class_name,class_id,center_x,center_y,width,height
-toy/object1-sr_int_full.png,teddy,1,150.5,200.3,45.2,67.8
+image,id,name,centerX,centerY,width,height
+toy/object1-sr_int_full.png,1,teddy,150.5,200.3,45.2,67.8
+toy/object1-tr_int_full.png,1,teddy,150.5,200.3,45.2,67.8
+toy/object1-tr_line.png,1,teddy,150.5,200.3,45.2,67.8
 ```
+
+Each annotation includes:
+- **Image path**: Path to the annotated image (RGB spatial, transient intensity, or line plot)
+- **Class ID**: Sequential ID per class
+- **Class name**: User-assigned class label
+- **Bounding box coordinates**: Center point (centerX, centerY) and dimensions (width, height)
+
+The exported data can be used to:
+- Train spatiotemporal object detection models
+- Associate RGB spatial information with transient temporal signals
+- Create datasets with synchronized spatial and temporal annotations
 
 ## 🎯 **Advanced Features**
 
@@ -197,6 +240,20 @@ This tool prioritizes:
 - **Usability**: Intuitive interface with professional appearance
 - **Quality**: Built-in review and validation features
 
+## 🔬 **Use Cases**
+
+### Spatiotemporal Object Detection
+- **Visualize** RGB spatially resolved images with their corresponding transient signals
+- **Annotate** objects using simple two-point bounding box creation
+- **Export** synchronized RGB and transient data for model training
+- **Train** spatiotemporal object detection models with both spatial and temporal information
+
+### Research Applications
+- Material analysis with spatial and temporal resolution
+- Object detection in time-resolved imaging
+- Multi-modal dataset preparation
+- Spatiotemporal pattern recognition
+
 ---
 
-**Built for professional image annotation workflows with focus on multi-view datasets and quality assurance.**
+**Built for professional spatiotemporal object detection workflows, combining visualization and annotation capabilities for RGB spatial and transient temporal data.**
