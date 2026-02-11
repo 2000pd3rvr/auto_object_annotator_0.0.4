@@ -21,8 +21,10 @@ import requests
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
-# Analytics configuration
-STATS_FILE = "analytics_stats.json"
+# Analytics configuration - Use absolute path to ensure persistence across rebuilds
+# In HuggingFace Spaces, files in the workspace root persist across rebuilds
+STATS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "analytics_stats.json")
+STATS_BACKUP_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "analytics_stats_backup.json")
 STATS_LOCK = threading.Lock()
 
 def get_client_ip():
@@ -59,7 +61,8 @@ def get_user_agent_hash():
         return 'unknown'
 
 def load_stats():
-    """Load statistics from JSON file"""
+    """Load statistics from JSON file with backup recovery"""
+    # Try to load from main file first
     try:
         if os.path.exists(STATS_FILE):
             with open(STATS_FILE, 'r') as f:
@@ -67,11 +70,27 @@ def load_stats():
                 # Convert unique_visitors list back to set if needed
                 if isinstance(data.get('unique_visitors'), list):
                     data['unique_visitors'] = set(data['unique_visitors'])
+                print(f"Loaded stats from {STATS_FILE}: {data.get('total_visits', 0)} visits")
                 return data
     except Exception as e:
-        print(f"Error loading stats: {e}")
+        print(f"Error loading stats from main file: {e}")
+        # Try backup file if main file fails
+        try:
+            if os.path.exists(STATS_BACKUP_FILE):
+                print(f"Attempting to load from backup file: {STATS_BACKUP_FILE}")
+                with open(STATS_BACKUP_FILE, 'r') as f:
+                    data = json.load(f)
+                    if isinstance(data.get('unique_visitors'), list):
+                        data['unique_visitors'] = set(data['unique_visitors'])
+                    print(f"Recovered stats from backup: {data.get('total_visits', 0)} visits")
+                    # Restore backup to main file
+                    save_stats(data)
+                    return data
+        except Exception as e2:
+            print(f"Error loading stats from backup file: {e2}")
     
-    # Return default structure
+    # Return default structure if both files fail
+    print("No existing stats found, starting fresh")
     return {
         'total_visits': 0,
         'unique_visitors': set(),
@@ -83,7 +102,7 @@ def load_stats():
     }
 
 def save_stats(stats):
-    """Save statistics to JSON file (convert sets to lists for JSON)"""
+    """Save statistics to JSON file with backup (convert sets to lists for JSON)"""
     try:
         stats_to_save = {
             'total_visits': stats.get('total_visits', 0),
@@ -94,10 +113,23 @@ def save_stats(stats):
             'last_visit': stats.get('last_visit'),
             'user_agents': stats.get('user_agents', {})
         }
+        
+        # Save to main file
         with open(STATS_FILE, 'w') as f:
             json.dump(stats_to_save, f, indent=2)
+        
+        # Create backup copy for redundancy
+        try:
+            import shutil
+            shutil.copy2(STATS_FILE, STATS_BACKUP_FILE)
+        except Exception as backup_error:
+            print(f"Warning: Could not create backup: {backup_error}")
+        
+        print(f"Stats saved successfully: {stats_to_save.get('total_visits', 0)} total visits")
     except Exception as e:
         print(f"Error saving stats: {e}")
+        import traceback
+        traceback.print_exc()
 
 def track_visit():
     """Track a visit - cumulative and persistent"""
