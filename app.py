@@ -217,6 +217,12 @@ def next_folder():
         app.config["HEAD"] = 0  # Loop back to first folder
         print("Reached end of folders, looping back to first folder")
     app.config["IMAGE_SET_INDEX"] = 0  # Reset to first image set
+    
+    # Preserve auto-play parameters if present
+    autoplay = request.args.get('autoplay')
+    interval = request.args.get('interval')
+    if autoplay and interval:
+        return redirect(url_for('tagger', autoplay=autoplay, interval=interval))
     return redirect(url_for('tagger'))
 
 @app.route('/prev_folder')
@@ -227,6 +233,12 @@ def prev_folder():
         app.config["HEAD"] = len(app.config["FOLDER_SETS"]) - 1  # Loop to last folder
         print("Reached beginning of folders, looping to last folder")
     app.config["IMAGE_SET_INDEX"] = 0  # Reset to first image set
+    
+    # Preserve auto-play parameters if present
+    autoplay = request.args.get('autoplay')
+    interval = request.args.get('interval')
+    if autoplay and interval:
+        return redirect(url_for('tagger', autoplay=autoplay, interval=interval))
     return redirect(url_for('tagger'))
 
 @app.route('/next_set')
@@ -252,6 +264,12 @@ def next_set():
             app.config["HEAD"] = 0
             app.config["IMAGE_SET_INDEX"] = 0
             print("DEBUG: Auto-looped back to first folder for continuous play")
+    
+    # Preserve auto-play parameters if present
+    autoplay = request.args.get('autoplay')
+    interval = request.args.get('interval')
+    if autoplay and interval:
+        return redirect(url_for('tagger', autoplay=autoplay, interval=interval))
     return redirect(url_for('tagger'))
 
 @app.route('/prev_set')
@@ -260,6 +278,12 @@ def prev_set():
     current_index = app.config.get("IMAGE_SET_INDEX", 0)
     if current_index > 0:
         app.config["IMAGE_SET_INDEX"] = current_index - 1
+    
+    # Preserve auto-play parameters if present
+    autoplay = request.args.get('autoplay')
+    interval = request.args.get('interval')
+    if autoplay and interval:
+        return redirect(url_for('tagger', autoplay=autoplay, interval=interval))
     return redirect(url_for('tagger'))
 
 @app.route('/reset_annotations')

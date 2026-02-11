@@ -258,57 +258,122 @@ function showResetDialog() {
 let autoPlayInterval = null;
 let isAutoPlaying = false;
 
-function toggleAutoPlay() {
-    const playButton = document.getElementById('playButton');
-
-    if (isAutoPlaying) {
-        // Stop auto-play
-        clearInterval(autoPlayInterval);
-        autoPlayInterval = null;
-        isAutoPlaying = false;
-        playButton.innerHTML = '▶️ Play';
-        playButton.style.color = '#28a745';
-        playButton.style.borderColor = '#28a745';
-        playButton.title = 'Auto-loop through all images';
-    } else {
-        // Start auto-play
-        const interval = prompt('Enter auto-play interval in seconds (default: 5):', '5');
-        const intervalSeconds = parseFloat(interval) || 5;
-
+// Check if auto-play should continue from previous page load
+function checkAutoPlayState() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const autoplay = urlParams.get('autoplay');
+    const interval = urlParams.get('interval');
+    
+    if (autoplay === 'true' && interval) {
+        const intervalSeconds = parseFloat(interval);
         if (intervalSeconds > 0) {
+            // Restore auto-play state
             isAutoPlaying = true;
+            const playButton = document.getElementById('playButton');
+            if (playButton) {
+                playButton.innerHTML = '⏸️ Pause';
+                playButton.style.color = '#dc3545';
+                playButton.style.borderColor = '#dc3545';
+                playButton.title = 'Pause auto-loop through all images';
+            }
+            
+            // Start auto-play after a short delay to ensure page is loaded
+            setTimeout(() => {
+                startAutoPlay(intervalSeconds, false);
+            }, 500);
+        }
+    }
+}
+
+function startAutoPlay(intervalSeconds, showPrompt) {
+    if (showPrompt === undefined) showPrompt = true;
+    
+    if (showPrompt) {
+        const interval = prompt('Enter auto-play interval in seconds (default: 5):', '5');
+        intervalSeconds = parseFloat(interval) || 5;
+    }
+    
+    if (intervalSeconds > 0) {
+        isAutoPlaying = true;
+        const playButton = document.getElementById('playButton');
+        if (playButton) {
             playButton.innerHTML = '⏸️ Pause';
             playButton.style.color = '#dc3545';
             playButton.style.borderColor = '#dc3545';
             playButton.title = 'Pause auto-loop through all images';
-
-            autoPlayInterval = setInterval(() => {
-                // Always try to go to next set first (this cycles through all images)
-                const nextSetLink = document.querySelector('a[href="/next_set"]');
-                if (nextSetLink) {
-                    window.location.href = '/next_set';
+        }
+        
+        // Store auto-play state in URL parameters for persistence across page reloads
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('autoplay', 'true');
+        currentUrl.searchParams.set('interval', intervalSeconds.toString());
+        
+        // Clear any existing interval
+        if (autoPlayInterval) {
+            clearInterval(autoPlayInterval);
+        }
+        
+        autoPlayInterval = setInterval(() => {
+            // Always try to go to next set first (this cycles through all images)
+            const nextSetLink = document.querySelector('a[href="/next_set"]');
+            if (nextSetLink) {
+                // Navigate with auto-play parameters
+                window.location.href = '/next_set?autoplay=true&interval=' + intervalSeconds;
+            } else {
+                // If no next set, try next folder to continue with more images
+                const nextFolderLink = document.querySelector('a[href="/next_folder"]');
+                if (nextFolderLink) {
+                    window.location.href = '/next_folder?autoplay=true&interval=' + intervalSeconds;
                 } else {
-                    // If no next set, try next folder to continue with more images
-                    const nextFolderLink = document.querySelector('a[href="/next_folder"]');
-                    if (nextFolderLink) {
-                        window.location.href = '/next_folder';
+                    // If no next folder, loop back to beginning to play all images again
+                    const prevFolderLink = document.querySelector('a[href="/prev_folder"]');
+                    if (prevFolderLink) {
+                        // Go to first folder to restart the cycle
+                        window.location.href = '/prev_folder?autoplay=true&interval=' + intervalSeconds;
                     } else {
-                        // If no next folder, loop back to beginning to play all images again
-                        const prevFolderLink = document.querySelector('a[href="/prev_folder"]');
-                        if (prevFolderLink) {
-                            // Go to first folder to restart the cycle
-                            window.location.href = '/prev_folder';
-                        } else {
-                            // Stop auto-play if no navigation available
-                            toggleAutoPlay();
-                            alert('Auto-play stopped: No navigation available.');
-                        }
+                        // Stop auto-play if no navigation available
+                        stopAutoPlay();
+                        alert('Auto-play stopped: No navigation available.');
                     }
                 }
-            }, intervalSeconds * 1000);
-        }
+            }
+        }, intervalSeconds * 1000);
     }
 }
+
+function stopAutoPlay() {
+    // Stop auto-play
+    if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+    }
+    isAutoPlaying = false;
+    
+    const playButton = document.getElementById('playButton');
+    if (playButton) {
+        playButton.innerHTML = '▶️ Play';
+        playButton.style.color = '#28a745';
+        playButton.style.borderColor = '#28a745';
+        playButton.title = 'Auto-loop through all images';
+    }
+    
+    // Remove auto-play parameters from URL
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete('autoplay');
+    currentUrl.searchParams.delete('interval');
+    window.history.replaceState({}, '', currentUrl);
+}
+
+function toggleAutoPlay() {
+    if (isAutoPlaying) {
+        stopAutoPlay();
+    } else {
+        startAutoPlay();
+    }
+}
+
+// Check for auto-play state on page load
+checkAutoPlayState();
 
 function zoomCanvas(canvasId) {
     const canvas = document.getElementById(canvasId);
