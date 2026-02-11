@@ -130,31 +130,31 @@
         <text>Folder {{ head }} / {{ len }}: {{ current_folder }} | Image Set {{ image_set_index }} / {{ max_sets }}</text>
         <div style="float:right;">
             <!-- Folder Navigation - Always available in continuous loop mode -->
-            <a href="/prev_folder" style="background: transparent; color: #dc3545; border: 1px solid #dc3545; padding: 2px 4px; border-radius: 3px; text-decoration: none; font-size: 7px; margin-right: 5px;" title="Previous folder (loops to end)">
+            <a href="/prev_folder" style="background: transparent; color: #dc3545; border: 2px solid #dc3545; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 14px; margin-right: 8px; font-weight: bold;" title="Previous folder (loops to end)">
                 <span class="glyphicon glyphicon-chevron-left"></span><span class="glyphicon glyphicon-chevron-left"></span> Prev Folder
             </a>
-            <a href="/next_folder" style="background: transparent; color: #dc3545; border: 1px solid #dc3545; padding: 2px 4px; border-radius: 3px; text-decoration: none; font-size: 7px; margin-right: 5px;" title="Next folder (loops to start)">
+            <a href="/next_folder" style="background: transparent; color: #dc3545; border: 2px solid #dc3545; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 14px; margin-right: 8px; font-weight: bold;" title="Next folder (loops to start)">
                 Next Folder <span class="glyphicon glyphicon-chevron-right"></span><span class="glyphicon glyphicon-chevron-right"></span>
             </a>
 
             <!-- Image Set Navigation -->
             {% if has_prev_set %}
-            <a href="/prev_set" style="background: transparent; color: #dc3545; border: 1px solid #dc3545; padding: 2px 4px; border-radius: 3px; text-decoration: none; font-size: 7px; margin-right: 5px;" title="Previous image set">
+            <a href="/prev_set" style="background: transparent; color: #dc3545; border: 2px solid #dc3545; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 14px; margin-right: 8px; font-weight: bold;" title="Previous image set">
                 <span class="glyphicon glyphicon-arrow-left"></span> Prev Set
             </a>
             {% endif %}
             {% if has_next_set %}
-            <a href="/next_set" style="background: transparent; color: #dc3545; border: 1px solid #dc3545; padding: 2px 4px; border-radius: 3px; text-decoration: none; font-size: 7px; margin-right: 5px;" title="Next image set">
+            <a href="/next_set" style="background: transparent; color: #dc3545; border: 2px solid #dc3545; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 14px; margin-right: 8px; font-weight: bold;" title="Next image set">
                 Next Set <span class="glyphicon glyphicon-arrow-right"></span>
             </a>
             {% endif %}
 
             <!-- Play button for auto-looping through image sets -->
-            <button id="playButton" onclick="toggleAutoPlay()" style="background: transparent; color: #28a745; border: 1px solid #28a745; padding: 2px 4px; border-radius: 3px; cursor: pointer; font-size: 7px; margin-right: 5px;" title="Auto-loop through all images">
+            <button id="playButton" onclick="toggleAutoPlay()" style="background: transparent; color: #28a745; border: 2px solid #28a745; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 14px; margin-right: 8px; font-weight: bold;" title="Auto-loop through all images">
                 ▶️ Play
             </button>
 
-            <button onclick="showResetDialog()" style="background: transparent; color: #dc3545; border: 2px solid #dc3545; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 7px; margin-left: 10px;">Reset Annotations</button>
+            <button onclick="showResetDialog()" style="background: transparent; color: #dc3545; border: 2px solid #dc3545; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 14px; margin-left: 10px; font-weight: bold;">Reset Annotations</button>
 
 
         </div>
