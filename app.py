@@ -21,6 +21,143 @@ import requests
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
+# Analytics configuration
+STATS_FILE = "analytics_stats.json"
+STATS_LOCK = threading.Lock()
+
+def get_client_ip():
+    """Get client IP address from request"""
+    try:
+        if request.headers.get('X-Forwarded-For'):
+            return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+        elif request.headers.get('X-Real-IP'):
+            return request.headers.get('X-Real-IP')
+        else:
+            return request.remote_addr or '127.0.0.1'
+    except:
+        return '127.0.0.1'
+
+def get_country_from_ip(ip):
+    """Get country from IP address using free API"""
+    try:
+        # Using ip-api.com (free, no API key required)
+        response = requests.get(f'http://ip-api.com/json/{ip}', timeout=2)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('status') == 'success':
+                return data.get('country', 'Unknown')
+    except Exception as e:
+        print(f"Error getting country for IP {ip}: {e}")
+    return 'Unknown'
+
+def get_user_agent_hash():
+    """Create a hash of user agent for unique visitor tracking"""
+    try:
+        ua = request.headers.get('User-Agent', '')
+        return hashlib.md5(ua.encode()).hexdigest()[:8]
+    except:
+        return 'unknown'
+
+def load_stats():
+    """Load statistics from JSON file"""
+    try:
+        if os.path.exists(STATS_FILE):
+            with open(STATS_FILE, 'r') as f:
+                data = json.load(f)
+                # Convert unique_visitors list back to set if needed
+                if isinstance(data.get('unique_visitors'), list):
+                    data['unique_visitors'] = set(data['unique_visitors'])
+                return data
+    except Exception as e:
+        print(f"Error loading stats: {e}")
+    
+    # Return default structure
+    return {
+        'total_visits': 0,
+        'unique_visitors': set(),
+        'countries': {},
+        'visits_by_date': {},
+        'first_visit': None,
+        'last_visit': None,
+        'user_agents': {}
+    }
+
+def save_stats(stats):
+    """Save statistics to JSON file (convert sets to lists for JSON)"""
+    try:
+        stats_to_save = {
+            'total_visits': stats.get('total_visits', 0),
+            'unique_visitors': list(stats['unique_visitors']) if isinstance(stats.get('unique_visitors'), set) else stats.get('unique_visitors', []),
+            'countries': stats.get('countries', {}),
+            'visits_by_date': stats.get('visits_by_date', {}),
+            'first_visit': stats.get('first_visit'),
+            'last_visit': stats.get('last_visit'),
+            'user_agents': stats.get('user_agents', {})
+        }
+        with open(STATS_FILE, 'w') as f:
+            json.dump(stats_to_save, f, indent=2)
+    except Exception as e:
+        print(f"Error saving stats: {e}")
+
+def track_visit():
+    """Track a visit - cumulative and persistent"""
+    try:
+        with STATS_LOCK:
+            stats = load_stats()
+            
+            # Convert unique_visitors list back to set if needed
+            if isinstance(stats.get('unique_visitors'), list):
+                stats['unique_visitors'] = set(stats['unique_visitors'])
+            
+            # Get visitor information
+            ip = get_client_ip()
+            ua_hash = get_user_agent_hash()
+            visitor_id = f"{ip}_{ua_hash}"
+            country = get_country_from_ip(ip)
+            current_date = datetime.now().strftime('%Y-%m-%d')
+            current_time = datetime.now().isoformat()
+            
+            # Update statistics
+            stats['total_visits'] = stats.get('total_visits', 0) + 1
+            if 'unique_visitors' not in stats:
+                stats['unique_visitors'] = set()
+            stats['unique_visitors'].add(visitor_id)
+            
+            # Track countries
+            if 'countries' not in stats:
+                stats['countries'] = {}
+            if country not in stats['countries']:
+                stats['countries'][country] = 0
+            stats['countries'][country] += 1
+            
+            # Track visits by date
+            if 'visits_by_date' not in stats:
+                stats['visits_by_date'] = {}
+            if current_date not in stats['visits_by_date']:
+                stats['visits_by_date'][current_date] = 0
+            stats['visits_by_date'][current_date] += 1
+            
+            # Track first and last visit
+            if not stats.get('first_visit'):
+                stats['first_visit'] = current_time
+            stats['last_visit'] = current_time
+            
+            # Track user agents
+            if 'user_agents' not in stats:
+                stats['user_agents'] = {}
+            ua = request.headers.get('User-Agent', 'Unknown')
+            if ua not in stats['user_agents']:
+                stats['user_agents'][ua] = 0
+            stats['user_agents'][ua] += 1
+            
+            # Save statistics
+            save_stats(stats)
+    except Exception as e:
+        # Don't let tracking errors break the app
+        print(f"Error tracking visit: {e}")
+        import traceback
+        traceback.print_exc()
+
 @app.route('/')
 def index():
     """Redirect root URL to tagger"""
@@ -852,7 +989,7 @@ if __name__ == "__main__":
         app.config["FOLDER_SETS"] = []
         app.config["DATASET_ERROR"] = error_msg
     else:
-        app.config["FOLDER_SETS"] = folder_sets
+    app.config["FOLDER_SETS"] = folder_sets
         app.config["DATASET_ERROR"] = None
     app.config["HEAD"] = 0
     app.config["IMAGE_SET_INDEX"] = 0
