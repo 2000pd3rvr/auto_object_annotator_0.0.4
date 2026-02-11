@@ -819,5 +819,22 @@ function setupCanvas(imageSrc, canvasId, imageName, labels) {
     updateAnnotationCount("{{ img }}", {{ img_labels|tojson|safe }}, "count_{{ loop.index0 }}");
 {% endfor %}
 </script>
+
+<!-- Statistics Bar at Bottom -->
+<div style="position: fixed; bottom: 0; left: 0; right: 0; background: #f8f9fa; border-top: 2px solid #007bff; padding: 10px 20px; display: flex; justify-content: center; align-items: center; gap: 40px; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);">
+    <div style="text-align: center;">
+        <div style="font-size: 24px; font-weight: bold; color: #007bff;">{{ total_visits }}</div>
+        <div style="font-size: 12px; color: #666;">Total Visits</div>
+    </div>
+    <div style="text-align: center;">
+        <div style="font-size: 24px; font-weight: bold; color: #28a745;">{{ unique_visitors }}</div>
+        <div style="font-size: 12px; color: #666;">Unique Visitors</div>
+    </div>
+    <div style="text-align: center;">
+        <div style="font-size: 24px; font-weight: bold; color: #dc3545;">{{ countries_count }}</div>
+        <div style="font-size: 12px; color: #666;">Countries</div>
+    </div>
+</div>
+
 </body>
 </html>

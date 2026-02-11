@@ -244,6 +244,17 @@ def tagger():
     has_prev_set = image_set_index > 0
     has_next_set = image_set_index + 1 < max_sets
 
+    # Get statistics for display
+    try:
+        stats_data = load_stats()
+        total_visits = stats_data.get('total_visits', 0)
+        unique_count = len(stats_data['unique_visitors']) if isinstance(stats_data.get('unique_visitors'), set) else len(stats_data.get('unique_visitors', []))
+        countries_count = len(stats_data.get('countries', {}))
+    except:
+        total_visits = 0
+        unique_count = 0
+        countries_count = 0
+
     return render_template(
         'tagger.html',
         has_prev_folder=has_prev_folder,
@@ -258,7 +269,10 @@ def tagger():
         head=app.config["HEAD"] + 1,
         len=len(app.config["FOLDER_SETS"]),
         image_set_index=image_set_index + 1,
-        max_sets=max_sets
+        max_sets=max_sets,
+        total_visits=total_visits,
+        unique_visitors=unique_count,
+        countries_count=countries_count
     )
 
 def save_annotations_to_csv():
