@@ -138,7 +138,7 @@ def get_hf_space_visits(space_id="0001AMA/auto_object_annotator_0.0.4"):
     # Method 1: Try the metrics API endpoint (may require auth, but worth trying)
     try:
         metrics_url = f"https://huggingface.co/api/spaces/{space_id}/metrics"
-        response = requests.get(metrics_url, timeout=5)
+        response = requests.get(metrics_url, timeout=2)  # Short timeout to avoid blocking
         if response.status_code == 200:
             data = response.json()
             # Look for visit count in the response
@@ -148,17 +148,16 @@ def get_hf_space_visits(space_id="0001AMA/auto_object_annotator_0.0.4"):
                     if key in data:
                         return int(data[key])
     except Exception as e:
-        print(f"Metrics API failed: {e}")
+        pass  # Silently fail - will try scraping
     
     # Method 2: Scrape from the Space page HTML
     try:
         space_url = f"https://huggingface.co/spaces/{space_id}"
-        response = requests.get(space_url, timeout=5, headers={'User-Agent': 'Mozilla/5.0'})
+        response = requests.get(space_url, timeout=2, headers={'User-Agent': 'Mozilla/5.0'})  # Short timeout
         if response.status_code == 200:
             html = response.text
             
             # Look for visit count in various patterns
-            # Pattern 1: Look for numbers followed by "Views" or "Visits"
             patterns = [
                 r'(\d+[kmKM]?)\s*[Vv]iews?',  # "302 Views" or "1.37k Views"
                 r'(\d+[kmKM]?)\s*[Vv]isits?',  # "302 Visits"
@@ -185,8 +184,8 @@ def get_hf_space_visits(space_id="0001AMA/auto_object_annotator_0.0.4"):
                                     return count
                         except (ValueError, AttributeError):
                             continue
-    except Exception as e:
-        print(f"Could not scrape HF Space visits: {e}")
+    except Exception:
+        pass  # Silently fail - will use fallback
     
     # Return None - will use app's own tracking as fallback
     return None
@@ -343,11 +342,18 @@ def tagger():
         unique_count = len(stats_data['unique_visitors']) if isinstance(stats_data.get('unique_visitors'), set) else len(stats_data.get('unique_visitors', []))
         countries_count = len(stats_data.get('countries', {}))
         # Try to get actual HF Space visit count, fallback to app's tracking
-        hf_space_visits = get_hf_space_visits()
-        if hf_space_visits is None:
+        # Use a short timeout to avoid blocking the page load
+        try:
+            hf_space_visits = get_hf_space_visits()
+            if hf_space_visits is None:
+                hf_space_visits = total_visits  # Fallback to app's own tracking
+        except Exception as e:
+            print(f"Error fetching HF Space visits: {e}")
             hf_space_visits = total_visits  # Fallback to app's own tracking
     except Exception as e:
         print(f"Error loading stats: {e}")
+        import traceback
+        traceback.print_exc()
         total_visits = 0
         unique_count = 0
         countries_count = 0
