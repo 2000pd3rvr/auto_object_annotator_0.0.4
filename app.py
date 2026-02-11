@@ -131,6 +131,27 @@ def save_stats(stats):
         import traceback
         traceback.print_exc()
 
+def get_hf_space_visits():
+    """Try to get HuggingFace Space visit count from the Space page"""
+    try:
+        space_url = "https://huggingface.co/spaces/0001AMA/auto_object_annotator_0.0.4"
+        response = requests.get(space_url, timeout=5)
+        if response.status_code == 200:
+            # Try to find visit count in the HTML (this is a workaround since there's no API)
+            import re
+            # Look for common patterns that might contain visit counts
+            # This is a heuristic approach - HF may change their HTML structure
+            html = response.text
+            # Try to find numbers that might be visit counts (look for patterns like "302", "1.37k", etc.)
+            # Note: This is fragile and may need adjustment based on actual HF HTML structure
+            # For now, return None if we can't find it reliably
+            pass
+    except Exception as e:
+        print(f"Could not fetch HF Space visits: {e}")
+    
+    # Return None - we'll use app's own tracking as fallback
+    return None
+
 def track_visit():
     """Track a visit - cumulative and persistent"""
     try:
@@ -304,7 +325,8 @@ def tagger():
         max_sets=max_sets,
         total_visits=total_visits,
         unique_visitors=unique_count,
-        countries_count=countries_count
+        countries_count=countries_count,
+        hf_space_visits=hf_space_visits
     )
 
 def save_annotations_to_csv():
