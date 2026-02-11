@@ -330,7 +330,7 @@ def tagger():
 
         # Get current set of 3 images (all with same file ID prefix)
         current_images = []
-    if image_set_index < max_sets:
+        if image_set_index < max_sets:
         current_set = image_sets[image_set_index]
             if not isinstance(current_set, dict):
                 raise ValueError(f"Invalid image set structure at index {image_set_index}")
