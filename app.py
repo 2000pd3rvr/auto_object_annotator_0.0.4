@@ -131,25 +131,64 @@ def save_stats(stats):
         import traceback
         traceback.print_exc()
 
-def get_hf_space_visits():
-    """Try to get HuggingFace Space visit count from the Space page"""
-    try:
-        space_url = "https://huggingface.co/spaces/0001AMA/auto_object_annotator_0.0.4"
-        response = requests.get(space_url, timeout=5)
-        if response.status_code == 200:
-            # Try to find visit count in the HTML (this is a workaround since there's no API)
-            import re
-            # Look for common patterns that might contain visit counts
-            # This is a heuristic approach - HF may change their HTML structure
-            html = response.text
-            # Try to find numbers that might be visit counts (look for patterns like "302", "1.37k", etc.)
-            # Note: This is fragile and may need adjustment based on actual HF HTML structure
-            # For now, return None if we can't find it reliably
-            pass
-    except Exception as e:
-        print(f"Could not fetch HF Space visits: {e}")
+def get_hf_space_visits(space_id="0001AMA/auto_object_annotator_0.0.4"):
+    """Try to get HuggingFace Space visit count from the Space page or metrics API"""
+    import re
     
-    # Return None - we'll use app's own tracking as fallback
+    # Method 1: Try the metrics API endpoint (may require auth, but worth trying)
+    try:
+        metrics_url = f"https://huggingface.co/api/spaces/{space_id}/metrics"
+        response = requests.get(metrics_url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            # Look for visit count in the response
+            if isinstance(data, dict):
+                # Try common field names
+                for key in ['views', 'visits', 'total_views', 'total_visits', 'viewCount', 'visitCount']:
+                    if key in data:
+                        return int(data[key])
+    except Exception as e:
+        print(f"Metrics API failed: {e}")
+    
+    # Method 2: Scrape from the Space page HTML
+    try:
+        space_url = f"https://huggingface.co/spaces/{space_id}"
+        response = requests.get(space_url, timeout=5, headers={'User-Agent': 'Mozilla/5.0'})
+        if response.status_code == 200:
+            html = response.text
+            
+            # Look for visit count in various patterns
+            # Pattern 1: Look for numbers followed by "Views" or "Visits"
+            patterns = [
+                r'(\d+[kmKM]?)\s*[Vv]iews?',  # "302 Views" or "1.37k Views"
+                r'(\d+[kmKM]?)\s*[Vv]isits?',  # "302 Visits"
+                r'"views?":\s*(\d+)',  # JSON: "views": 302
+                r'"visits?":\s*(\d+)',  # JSON: "visits": 302
+                r'viewCount["\']:\s*(\d+)',  # viewCount: 302
+            ]
+            
+            for pattern in patterns:
+                matches = re.findall(pattern, html, re.IGNORECASE)
+                if matches:
+                    # Take the first reasonable match (likely the largest number)
+                    for match in matches:
+                        try:
+                            count_str = match.lower()
+                            if 'k' in count_str:
+                                return int(float(count_str.replace('k', '')) * 1000)
+                            elif 'm' in count_str:
+                                return int(float(count_str.replace('m', '')) * 1000000)
+                            else:
+                                count = int(count_str.replace(',', ''))
+                                # Only return if it's a reasonable number (likely > 0)
+                                if count > 0:
+                                    return count
+                        except (ValueError, AttributeError):
+                            continue
+    except Exception as e:
+        print(f"Could not scrape HF Space visits: {e}")
+    
+    # Return None - will use app's own tracking as fallback
     return None
 
 def track_visit():
@@ -303,9 +342,12 @@ def tagger():
         total_visits = stats_data.get('total_visits', 0)
         unique_count = len(stats_data['unique_visitors']) if isinstance(stats_data.get('unique_visitors'), set) else len(stats_data.get('unique_visitors', []))
         countries_count = len(stats_data.get('countries', {}))
-        # Total Cumulative Visits = app's own tracking (cumulative since app started)
-        hf_space_visits = total_visits
-    except:
+        # Try to get actual HF Space visit count, fallback to app's tracking
+        hf_space_visits = get_hf_space_visits()
+        if hf_space_visits is None:
+            hf_space_visits = total_visits  # Fallback to app's own tracking
+    except Exception as e:
+        print(f"Error loading stats: {e}")
         total_visits = 0
         unique_count = 0
         countries_count = 0
@@ -1060,7 +1102,7 @@ if __name__ == "__main__":
         app.config["FOLDER_SETS"] = []
         app.config["DATASET_ERROR"] = error_msg
     else:
-        app.config["FOLDER_SETS"] = folder_sets
+    app.config["FOLDER_SETS"] = folder_sets
         app.config["DATASET_ERROR"] = None
     app.config["HEAD"] = 0
     app.config["IMAGE_SET_INDEX"] = 0
