@@ -454,7 +454,25 @@ def tagger():
         hf_all_time_visits = None
 
     print(f"DEBUG: About to render template. current_folder_set: {current_folder_set is not None}, current_images: {len(current_images)}")
+    
+    # Ensure we have all required variables
+    if current_folder_set is None:
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Data Error</title>
+            <meta charset="UTF-8">
+        </head>
+        <body>
+            <h1>Data Error</h1>
+            <p>Unable to load folder data. Please check the Space logs.</p>
+        </body>
+        </html>
+        """, 500
+    
     try:
+        current_folder_name = current_folder_set.get('folder', 'Unknown') if isinstance(current_folder_set, dict) else 'Unknown'
         result = render_template(
             'tagger.html',
             has_prev_folder=has_prev_folder,
@@ -463,7 +481,7 @@ def tagger():
             has_next_set=has_next_set,
             directory=directory,
             current_folder_set=current_folder_set,
-            current_folder=current_folder_set['folder'] if current_folder_set else '',
+            current_folder=current_folder_name,
             current_images=current_images,
             labels=labels,
             head=app.config["HEAD"] + 1,
