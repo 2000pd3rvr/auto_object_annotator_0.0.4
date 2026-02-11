@@ -245,9 +245,30 @@ def track_visit():
 @app.route('/')
 def index():
     """Redirect root URL to tagger"""
-    # Track visit
-    track_visit()
+    print("DEBUG: Root route / called")
+    try:
+        # Track visit
+        track_visit()
+    except Exception as e:
+        print(f"Error in track_visit at root: {e}")
     return redirect(url_for('tagger'))
+
+@app.route('/test')
+def test():
+    """Simple test route to verify app is running"""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Test</title>
+    </head>
+    <body>
+        <h1>App is running!</h1>
+        <p>If you see this, the Flask app is working.</p>
+        <p><a href="/tagger">Go to Tagger</a></p>
+    </body>
+    </html>
+    """
 
 @app.errorhandler(Exception)
 def handle_exception(e):
