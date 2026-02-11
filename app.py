@@ -5,7 +5,7 @@ import argparse
 from flask import Flask, redirect, url_for, request
 from flask import render_template
 from flask import send_file
-import os
+import os  
 from datasets import load_dataset
 from huggingface_hub import hf_hub_download
 from io import BytesIO
@@ -23,14 +23,51 @@ def index():
 
 @app.route('/tagger')
 def tagger():
+    # Check if dataset was loaded successfully
+    folder_sets = app.config.get("FOLDER_SETS", [])
+    if not folder_sets:
+        error_msg = app.config.get("DATASET_ERROR", "No folders found with all three required image types (sr_int_full.png, -tr_line.png, -tr_int_full.png)")
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Dataset Loading Error</title>
+            <meta charset="UTF-8">
+            <style>
+                body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f0f0f0; }}
+                .container {{ background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; }}
+                h1 {{ color: #dc3545; margin-bottom: 20px; }}
+                p {{ font-size: 16px; margin: 15px 0; color: #333; }}
+                .error {{ color: #dc3545; font-weight: bold; }}
+                .info {{ background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>⚠️ Dataset Loading Error</h1>
+                <div class="info">
+                    <p class="error">{error_msg}</p>
+                    <p>This may be due to:</p>
+                    <ul style="text-align: left; display: inline-block;">
+                        <li>Dataset not fully uploaded yet</li>
+                        <li>Network issues loading the dataset</li>
+                        <li>Dataset structure doesn't match expected format</li>
+                    </ul>
+                </div>
+                <p>Please check the Space logs for more details.</p>
+            </div>
+        </body>
+        </html>
+        """, 500
+    
     # Loop back to start if we've gone past the end
-    if app.config["HEAD"] >= len(app.config["FOLDER_SETS"]):
+    if app.config["HEAD"] >= len(folder_sets):
         app.config["HEAD"] = 0
         app.config["IMAGE_SET_INDEX"] = 0
         print("Reached end of folders, looping back to first folder")
 
-    directory = app.config['IMAGES']
-    current_folder_set = app.config["FOLDER_SETS"][app.config["HEAD"]]
+    directory = app.config.get('IMAGES', '')
+    current_folder_set = folder_sets[app.config["HEAD"]]
 
     # Get current image set index (default to 0 if not set)
     image_set_index = app.config.get("IMAGE_SET_INDEX", 0)
@@ -622,15 +659,19 @@ if __name__ == "__main__":
         folder_sets = load_from_local_directory(directory)
 
     if not folder_sets:
-        print("No folders found with all three required image types (sr_int_full.png, -tr_line.png, -tr_int_full.png)")
+        error_msg = "No folders found with all three required image types (sr_int_full.png, -tr_line.png, -tr_int_full.png)"
+        print(error_msg)
         if use_hf_dataset:
             print("This may be due to:")
             print("1. Dataset not fully uploaded yet")
             print("2. Dataset structure doesn't match expected format")
             print("3. Network issues loading the dataset")
-        exit()
-
-    app.config["FOLDER_SETS"] = folder_sets
+        # Don't exit - allow app to start and show error message in UI
+        app.config["FOLDER_SETS"] = []
+        app.config["DATASET_ERROR"] = error_msg
+    else:
+        app.config["FOLDER_SETS"] = folder_sets
+        app.config["DATASET_ERROR"] = None
     app.config["HEAD"] = 0
     app.config["IMAGE_SET_INDEX"] = 0
     app.config["OUT"] = args.out if args.out else "out.csv"
