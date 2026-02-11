@@ -859,8 +859,8 @@ function setupCanvas(imageSrc, canvasId, imageName, labels) {
         <div style="font-size: 12px; color: #666;">Countries</div>
     </div>
     <div style="text-align: center;">
-        <div style="font-size: 24px; font-weight: bold; color: #6c757d;">{{ hf_space_visits }}</div>
-        <div style="font-size: 12px; color: #666;">Total Cumulative Visits</div>
+        <div style="font-size: 24px; font-weight: bold; color: #6c757d;">{% if hf_all_time_visits is not none %}{{ hf_all_time_visits }}{% else %}-{% endif %}</div>
+        <div style="font-size: 12px; color: #666;">All time visits</div>
     </div>
 </div>
 

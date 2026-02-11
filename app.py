@@ -131,10 +131,8 @@ def save_stats(stats):
         import traceback
         traceback.print_exc()
 
-def get_hf_space_visits(space_id="0001AMA/auto_object_annotator_0.0.4"):
-    """Try to get HuggingFace Space visit count from the Space page or metrics API"""
-    import re
-    
+def get_hf_all_time_visits(space_id="0001AMA/auto_object_annotator_0.0.4"):
+    """Get HuggingFace Space 'All time visits' from metrics API - returns None if not available"""
     # Get HuggingFace token from environment (automatically provided in Spaces)
     hf_token = os.getenv("HF_TOKEN") or os.getenv("HUGGING_FACE_HUB_TOKEN")
     
@@ -152,64 +150,37 @@ def get_hf_space_visits(space_id="0001AMA/auto_object_annotator_0.0.4"):
     if hf_token:
         headers['Authorization'] = f'Bearer {hf_token}'
     
-    # Method 1: Try the metrics API endpoint with authentication
+    # Try the metrics API endpoint with authentication
     try:
         metrics_url = f"https://huggingface.co/api/spaces/{space_id}/metrics"
         response = requests.get(metrics_url, timeout=2, headers=headers)  # Short timeout to avoid blocking
         if response.status_code == 200:
             data = response.json()
-            # Look for visit count in the response
+            # Look for "All time visits" in the response
             if isinstance(data, dict):
-                # Try common field names
-                for key in ['views', 'visits', 'total_views', 'total_visits', 'viewCount', 'visitCount']:
+                # Try various field names for "all time visits"
+                for key in ['all_time_visits', 'allTimeVisits', 'total_visits', 'totalVisits', 
+                           'all_time_views', 'allTimeViews', 'total_views', 'totalViews',
+                           'views', 'visits', 'viewCount', 'visitCount']:
                     if key in data:
-                        return int(data[key])
+                        value = data[key]
+                        # Only return if it's a valid number > 0 (not blank/null)
+                        if value is not None and value != '' and value != '-':
+                            try:
+                                count = int(value) if isinstance(value, (int, float, str)) else None
+                                if count is not None and count > 0:
+                                    return count
+                            except (ValueError, TypeError):
+                                continue
         elif response.status_code == 401:
             print("HF API: Authentication required but token may be invalid")
         elif response.status_code == 403:
             print("HF API: Access forbidden - may need owner permissions")
     except Exception as e:
         print(f"HF API request failed: {e}")  # Debug logging
-        pass  # Silently fail - will try scraping
+        pass  # Silently fail - return None
     
-    # Method 2: Scrape from the Space page HTML
-    try:
-        space_url = f"https://huggingface.co/spaces/{space_id}"
-        response = requests.get(space_url, timeout=2, headers=headers)  # Use same headers (with auth if available)
-        if response.status_code == 200:
-            html = response.text
-            
-            # Look for visit count in various patterns
-            patterns = [
-                r'(\d+[kmKM]?)\s*[Vv]iews?',  # "302 Views" or "1.37k Views"
-                r'(\d+[kmKM]?)\s*[Vv]isits?',  # "302 Visits"
-                r'"views?":\s*(\d+)',  # JSON: "views": 302
-                r'"visits?":\s*(\d+)',  # JSON: "visits": 302
-                r'viewCount["\']:\s*(\d+)',  # viewCount: 302
-            ]
-            
-            for pattern in patterns:
-                matches = re.findall(pattern, html, re.IGNORECASE)
-                if matches:
-                    # Take the first reasonable match (likely the largest number)
-                    for match in matches:
-                        try:
-                            count_str = match.lower()
-                            if 'k' in count_str:
-                                return int(float(count_str.replace('k', '')) * 1000)
-                            elif 'm' in count_str:
-                                return int(float(count_str.replace('m', '')) * 1000000)
-                            else:
-                                count = int(count_str.replace(',', ''))
-                                # Only return if it's a reasonable number (likely > 0)
-                                if count > 0:
-                                    return count
-                        except (ValueError, AttributeError):
-                            continue
-    except Exception:
-        pass  # Silently fail - will use fallback
-    
-    # Return None - will use app's own tracking as fallback
+    # Return None if not available (don't fallback to app's tracking)
     return None
 
 def track_visit():
@@ -338,29 +309,29 @@ def tagger():
         # Validate folder set structure
         if not isinstance(current_folder_set, dict) or 'image_sets' not in current_folder_set:
             raise ValueError(f"Invalid folder set structure at index {app.config['HEAD']}")
-        
-        # Get current image set index (default to 0 if not set)
-        image_set_index = app.config.get("IMAGE_SET_INDEX", 0)
+
+    # Get current image set index (default to 0 if not set)
+    image_set_index = app.config.get("IMAGE_SET_INDEX", 0)
         if image_set_index < 0:
             image_set_index = 0
             app.config["IMAGE_SET_INDEX"] = 0
 
-        # Get image sets for current folder
-        image_sets = current_folder_set['image_sets']
+    # Get image sets for current folder
+    image_sets = current_folder_set['image_sets']
         if not isinstance(image_sets, list) or len(image_sets) == 0:
             raise ValueError(f"No image sets found in folder {current_folder_set.get('folder', 'unknown')}")
         
-        max_sets = len(image_sets)
+    max_sets = len(image_sets)
 
-        # Ensure image_set_index is within bounds
-        if image_set_index >= max_sets:
-            image_set_index = 0
-            app.config["IMAGE_SET_INDEX"] = 0
+    # Ensure image_set_index is within bounds
+    if image_set_index >= max_sets:
+        image_set_index = 0
+        app.config["IMAGE_SET_INDEX"] = 0
 
-        # Get current set of 3 images (all with same file ID prefix)
-        current_images = []
-        if image_set_index < max_sets:
-            current_set = image_sets[image_set_index]
+    # Get current set of 3 images (all with same file ID prefix)
+    current_images = []
+    if image_set_index < max_sets:
+        current_set = image_sets[image_set_index]
             if not isinstance(current_set, dict):
                 raise ValueError(f"Invalid image set structure at index {image_set_index}")
             
@@ -370,11 +341,11 @@ def tagger():
                 if key not in current_set:
                     raise ValueError(f"Missing required image key '{key}' in image set {image_set_index}")
             
-            current_images = [
-                current_set['sr_int_full'],
-                current_set['tr_line'],
-                current_set['tr_int_full']
-            ]
+        current_images = [
+            current_set['sr_int_full'],
+            current_set['tr_line'],
+            current_set['tr_int_full']
+        ]
         else:
             raise ValueError(f"Image set index {image_set_index} out of bounds (max: {max_sets})")
             
@@ -418,20 +389,23 @@ def tagger():
         unique_count = 0
         countries_count = 0
     
-    # Try to get actual HF Space visit count, fallback to app's tracking
-    # Make this completely non-blocking - if it fails, just use app's tracking
-    hf_space_visits = total_visits  # Default fallback
+    # Try to get HF Space "All time visits" from analytics
+    # Only use HF value if available - don't fallback to app's tracking
+    hf_all_time_visits = None
     try:
-        hf_space_visits_result = get_hf_space_visits()
-        if hf_space_visits_result is not None and hf_space_visits_result > 0:
-            hf_space_visits = hf_space_visits_result
+        hf_all_time_visits = get_hf_all_time_visits()
+        # Only use if we got a valid value
+        if hf_all_time_visits is not None and hf_all_time_visits > 0:
+            pass  # Use the value
+        else:
+            hf_all_time_visits = None  # Keep blank until HF populates it
     except Exception as e:
-        # Silently fail - use app's tracking as fallback
-        print(f"HF Space visits fetch failed (using app tracking): {e}")
-        pass
+        # Silently fail - keep as None (blank)
+        print(f"HF All time visits fetch failed (keeping blank): {e}")
+        hf_all_time_visits = None
 
     try:
-        return render_template(
+    return render_template(
         'tagger.html',
         has_prev_folder=has_prev_folder,
         has_next_folder=has_next_folder,
@@ -449,7 +423,7 @@ def tagger():
         total_visits=total_visits,
         unique_visitors=unique_count,
         countries_count=countries_count,
-        hf_space_visits=hf_space_visits
+        hf_all_time_visits=hf_all_time_visits
         )
     except Exception as e:
         # If template rendering fails, return a simple error page
@@ -1030,9 +1004,9 @@ def load_from_huggingface_dataset(dataset_name="0001AMA/multimodal_data_annotato
         app.config["CACHE_DIR"] = cache_dir
         
         # Process files to group by folder and file ID
-        folder_sets = []
-        required_suffixes = ['sr_int_full.png', '-tr_line.png', '-tr_int_full.png']
-        
+    folder_sets = []
+    required_suffixes = ['sr_int_full.png', '-tr_line.png', '-tr_int_full.png']
+
         # Group files by folder and file ID
         folder_files = {}  # {folder_name: {file_id: {suffix: file_path}}}
         
@@ -1200,7 +1174,7 @@ if __name__ == "__main__":
         app.config["FOLDER_SETS"] = []
         app.config["DATASET_ERROR"] = error_msg
     else:
-        app.config["FOLDER_SETS"] = folder_sets
+    app.config["FOLDER_SETS"] = folder_sets
         app.config["DATASET_ERROR"] = None
     app.config["HEAD"] = 0
     app.config["IMAGE_SET_INDEX"] = 0
