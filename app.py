@@ -16,6 +16,11 @@ import shutil
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
+@app.route('/')
+def index():
+    """Redirect root URL to tagger"""
+    return redirect(url_for('tagger'))
+
 @app.route('/tagger')
 def tagger():
     # Loop back to start if we've gone past the end
