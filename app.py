@@ -323,31 +323,31 @@ def tagger():
         
         max_sets = len(image_sets)
 
-    # Ensure image_set_index is within bounds
-    if image_set_index >= max_sets:
-        image_set_index = 0
-        app.config["IMAGE_SET_INDEX"] = 0
+        # Ensure image_set_index is within bounds
+        if image_set_index >= max_sets:
+            image_set_index = 0
+            app.config["IMAGE_SET_INDEX"] = 0
 
-    # Get current set of 3 images (all with same file ID prefix)
-    current_images = []
-    if image_set_index < max_sets:
-        current_set = image_sets[image_set_index]
-            if not isinstance(current_set, dict):
-                raise ValueError(f"Invalid image set structure at index {image_set_index}")
-            
-            # Validate required keys exist
-            required_keys = ['sr_int_full', 'tr_line', 'tr_int_full']
-            for key in required_keys:
-                if key not in current_set:
-                    raise ValueError(f"Missing required image key '{key}' in image set {image_set_index}")
-            
-        current_images = [
-            current_set['sr_int_full'],
-            current_set['tr_line'],
-            current_set['tr_int_full']
-        ]
-        else:
-            raise ValueError(f"Image set index {image_set_index} out of bounds (max: {max_sets})")
+        # Get current set of 3 images (all with same file ID prefix)
+        current_images = []
+        if image_set_index < max_sets:
+            current_set = image_sets[image_set_index]
+                if not isinstance(current_set, dict):
+                    raise ValueError(f"Invalid image set structure at index {image_set_index}")
+                
+                # Validate required keys exist
+                required_keys = ['sr_int_full', 'tr_line', 'tr_int_full']
+                for key in required_keys:
+                    if key not in current_set:
+                        raise ValueError(f"Missing required image key '{key}' in image set {image_set_index}")
+                
+            current_images = [
+                current_set['sr_int_full'],
+                current_set['tr_line'],
+                current_set['tr_int_full']
+            ]
+            else:
+                raise ValueError(f"Image set index {image_set_index} out of bounds (max: {max_sets})")
             
     except (IndexError, KeyError, ValueError) as e:
         print(f"Error accessing folder/image data: {e}")
