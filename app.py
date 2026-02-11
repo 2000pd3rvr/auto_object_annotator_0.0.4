@@ -318,18 +318,18 @@ def tagger():
 
         # Get image sets for current folder
         image_sets = current_folder_set['image_sets']
-            if not isinstance(image_sets, list) or len(image_sets) == 0:
-                raise ValueError(f"No image sets found in folder {current_folder_set.get('folder', 'unknown')}")
-            
-    max_sets = len(image_sets)
+        if not isinstance(image_sets, list) or len(image_sets) == 0:
+            raise ValueError(f"No image sets found in folder {current_folder_set.get('folder', 'unknown')}")
+        
+        max_sets = len(image_sets)
 
-    # Ensure image_set_index is within bounds
-    if image_set_index >= max_sets:
-        image_set_index = 0
-        app.config["IMAGE_SET_INDEX"] = 0
+        # Ensure image_set_index is within bounds
+        if image_set_index >= max_sets:
+            image_set_index = 0
+            app.config["IMAGE_SET_INDEX"] = 0
 
-    # Get current set of 3 images (all with same file ID prefix)
-    current_images = []
+        # Get current set of 3 images (all with same file ID prefix)
+        current_images = []
     if image_set_index < max_sets:
         current_set = image_sets[image_set_index]
             if not isinstance(current_set, dict):
