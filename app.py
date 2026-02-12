@@ -1025,7 +1025,7 @@ def images(f):
                         break
             
             # Get HF token for authenticated requests
-            hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
+            hf_token = os.getenv("HF_TOKEN") or os.getenv("HUGGING_FACE_HUB_TOKEN")
             if not hf_token:
                 try:
                     from huggingface_hub import HfApi
@@ -1093,7 +1093,7 @@ def load_from_huggingface_dataset(dataset_name="0001AMA/multimodal_data_annotato
         from huggingface_hub import list_repo_files, hf_hub_download
         
         # Get HF token for authenticated requests
-        hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
+        hf_token = os.getenv("HF_TOKEN") or os.getenv("HUGGING_FACE_HUB_TOKEN")
         if not hf_token:
             try:
                 from huggingface_hub import HfApi
