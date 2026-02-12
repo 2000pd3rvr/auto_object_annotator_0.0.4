@@ -153,7 +153,8 @@ def get_hf_all_time_visits(space_id="0001AMA/auto_object_annotator_0.0.4"):
     # Try the metrics API endpoint with authentication
     try:
         metrics_url = f"https://huggingface.co/api/spaces/{space_id}/metrics"
-        response = requests.get(metrics_url, timeout=2, headers=headers)  # Short timeout to avoid blocking
+        # Use very short timeout (1 second) to prevent blocking page loads
+        response = requests.get(metrics_url, timeout=1, headers=headers)
         if response.status_code == 200:
             data = response.json()
             # Look for "All time visits" in the response
@@ -461,8 +462,11 @@ def tagger():
     
     # Try to get HF Space "All time visits" from analytics
     # Only use HF value if available - don't fallback to app's tracking
+    # Make this non-blocking with very short timeout
     hf_all_time_visits = None
     try:
+        # Use threading to prevent blocking - but actually just call it directly with timeout
+        # The function already has a 2-second timeout, so it should fail fast
         hf_all_time_visits = get_hf_all_time_visits()
         # Only use if we got a valid value
         if hf_all_time_visits is not None and hf_all_time_visits > 0:
@@ -470,7 +474,7 @@ def tagger():
         else:
             hf_all_time_visits = None  # Keep blank until HF populates it
     except Exception as e:
-        # Silently fail - keep as None (blank)
+        # Silently fail - keep as None (blank) - don't let this break the page
         print(f"HF All time visits fetch failed (keeping blank): {e}")
         hf_all_time_visits = None
 
