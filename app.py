@@ -482,6 +482,7 @@ def tagger():
     
     # Ensure we have all required variables
     if current_folder_set is None:
+        print("ERROR: current_folder_set is None - cannot render template")
         return f"""
         <!DOCTYPE html>
         <html>
@@ -496,8 +497,24 @@ def tagger():
         </html>
         """, 500
     
+    # Validate all required template variables before rendering
     try:
         current_folder_name = current_folder_set.get('folder', 'Unknown') if isinstance(current_folder_set, dict) else 'Unknown'
+        
+        # Double-check all variables are valid
+        if not isinstance(current_images, list):
+            current_images = []
+        if not isinstance(labels, list):
+            labels = []
+        if not isinstance(total_visits, int):
+            total_visits = 0
+        if not isinstance(unique_count, int):
+            unique_count = 0
+        if not isinstance(countries_count, int):
+            countries_count = 0
+        
+        print(f"DEBUG: Rendering template with {len(current_images)} images, folder: {current_folder_name}")
+        
         result = render_template(
             'tagger.html',
             has_prev_folder=has_prev_folder,
@@ -518,11 +535,11 @@ def tagger():
             countries_count=countries_count,
             hf_all_time_visits=hf_all_time_visits
         )
-        print("DEBUG: Template rendered successfully")
+        print("DEBUG: Template rendered successfully, returning result")
         return result
     except Exception as e:
         # If template rendering fails, return a simple error page
-        print(f"ERROR rendering template: {e}")
+        print(f"CRITICAL ERROR rendering template: {e}")
         import traceback
         traceback.print_exc()
         return f"""
@@ -537,6 +554,7 @@ def tagger():
             <p>An error occurred while rendering the page.</p>
             <p>Error: {str(e)}</p>
             <p>Please check the Space logs for more details.</p>
+            <p><a href="/test">Test if app is running</a></p>
         </body>
         </html>
         """, 500
