@@ -1024,13 +1024,24 @@ def images(f):
                         file_path = path
                         break
             
+            # Get HF token for authenticated requests
+            hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
+            if not hf_token:
+                try:
+                    from huggingface_hub import HfApi
+                    api = HfApi()
+                    hf_token = api.token
+                except:
+                    pass
+            
             # Download file from HuggingFace
             try:
                 local_path = hf_hub_download(
                     repo_id=dataset_name,
                     filename=file_path,
                     repo_type="dataset",
-                    cache_dir=cache_dir
+                    cache_dir=cache_dir,
+                    token=hf_token
                 )
                 
                 if os.path.exists(local_path):
@@ -1045,7 +1056,8 @@ def images(f):
                         local_path = hf_hub_download(
                             repo_id=dataset_name,
                             filename=file_path,
-                            repo_type="dataset"
+                            repo_type="dataset",
+                            token=hf_token
                         )
                         # Copy to cache
                         os.makedirs(os.path.dirname(cache_file), exist_ok=True)
@@ -1080,9 +1092,19 @@ def load_from_huggingface_dataset(dataset_name="0001AMA/multimodal_data_annotato
     try:
         from huggingface_hub import list_repo_files, hf_hub_download
         
+        # Get HF token for authenticated requests
+        hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
+        if not hf_token:
+            try:
+                from huggingface_hub import HfApi
+                api = HfApi()
+                hf_token = api.token
+            except:
+                pass
+        
         # List all files in the dataset repository
         print("Listing files in dataset repository...")
-        repo_files = list_repo_files(repo_id=dataset_name, repo_type="dataset")
+        repo_files = list_repo_files(repo_id=dataset_name, repo_type="dataset", token=hf_token)
         print(f"Found {len(repo_files)} files in repository")
         
         # Filter PNG files only
