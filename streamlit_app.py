@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Streamlit Community Cloud entrypoint — crawlable project page for Auto Object Annotator.
-
-Live interactive runtime: Hugging Face Space (0001AMA/auto_object_annotator_0.0.4)
-Source: https://github.com/2000pd3rvr/auto_object_annotator_0.0.4
-Author: Deborah Akuoko Minka / Deborah Akuoko-Minka
-"""
+"""Auto Object Annotator — Streamlit Community Cloud app (GitHub-connected)."""
 
 from __future__ import annotations
 
@@ -13,95 +8,82 @@ import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="Auto Object Annotator · Deborah Akuoko Minka",
-    page_icon="🔬",
+    page_icon="🏷️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-HF_SPACE = "0001AMA/auto_object_annotator_0.0.4"
-HF_URL = f"https://huggingface.co/spaces/{HF_SPACE}"
-HF_EMBED = f"https://{HF_SPACE.replace('/', '-')}.hf.space"
+HF_URL = "https://huggingface.co/spaces/0001AMA/auto_object_annotator_0.0.4"
+HF_EMBED = "https://0001AMA-auto-object-annotator-0.0.4.hf.space"
 GH_URL = "https://github.com/2000pd3rvr/auto_object_annotator_0.0.4"
 WP_URL = "https://deborahakuokominka.wordpress.com/"
 ORCID = "https://orcid.org/0009-0008-6219-154X"
 SCHOLAR = "https://scholar.google.co.uk/citations?hl=en&user=ab0EyjYAAAAJ"
 
 st.title("Auto Object Annotator")
-st.subheader("Automatic object annotation for vision datasets")
-st.caption(
-    "Deborah Akuoko Minka is the same person as Deborah Akuoko-Minka "
-    "(any capitalization; hyphen optional). Primary profiles: WordPress · ORCID · GitHub · Scholar."
-)
+st.subheader("Observe, label, and iterate on vision datasets")
+st.caption("Deborah Akuoko Minka · Deborah Akuoko-Minka")
 
-c1, c2, c3, c4 = st.columns(4)
-c1.link_button("Open live HF Space", HF_URL, use_container_width=True)
-c2.link_button("GitHub source", GH_URL, use_container_width=True)
-c3.link_button("WordPress research site", WP_URL, use_container_width=True)
-c4.link_button("ORCID", ORCID, use_container_width=True)
+b1, b2, b3, b4 = st.columns(4)
+b1.link_button("Live demo", HF_URL, use_container_width=True)
+b2.link_button("Source on GitHub", GH_URL, use_container_width=True)
+b3.link_button("Research site", WP_URL, use_container_width=True)
+b4.link_button("ORCID", ORCID, use_container_width=True)
 
 st.markdown("---")
-left, right = st.columns([1.2, 1])
+left, right = st.columns([1.25, 1])
+
 with left:
-    st.header("About")
-    st.write("""Interactive annotation helper for vision datasets — observe samples, propose labels, and iterate without a heavy labeling suite. Live annotator runs as a Docker Space; this Streamlit page is the crawlable project description linked to GitHub. Part of machine-intelligence tooling by Deborah Akuoko Minka / Deborah Akuoko-Minka.""")
-    st.header("Features")
-    for f in ['Flask annotation UI with Hub dataset downloads', 'Rapid label iteration on image collections', 'Public Docker Space for demos', 'Research-adjacent CV / machine-intelligence tooling']:
-        st.markdown(f"- {f}")
-    st.header("Audience")
-    st.write("""CV practitioners, dataset authors, and students needing lightweight annotation demos.""")
-    st.header("Technical notes")
+    st.header("What it is")
+    st.write(
+        "Auto Object Annotator is a small vision tooling Space for exploring automatic "
+        "object annotation. It is aimed at people who need a practical loop between "
+        "looking at images, proposing labels, and refining a dataset without standing "
+        "up a full labelling platform."
+    )
+
+    st.header("What you can do")
+    st.markdown(
+        """
+- Run annotation passes against sample or uploaded image sets
+- Inspect proposed labels before committing them
+- Export results for downstream training or review
+- Compare the approach with heavier annotation stacks
+        """
+    )
+
+    st.header("Who it is for")
+    st.write(
+        "Computer vision researchers, data engineers, and practitioners preparing "
+        "labelled sets for detection or recognition work."
+    )
+
+    st.header("How it is built")
     st.markdown(
         f"""
-- **Backend / runtime:** Flask + datasets (Docker Space on Hugging Face)
-- **GitHub repository:** [{GH_URL}]({GH_URL})
-- **Hugging Face Space:** [{HF_URL}]({HF_URL})
-- **Streamlit role:** GitHub-connected description + discovery page for [Streamlit Community Cloud](https://share.streamlit.io/)
-- **Keywords:** object annotation, computer vision, dataset labeling, auto annotator, machine intelligence, Deborah Akuoko Minka, SPAD
-"""
+- **Live app:** [Hugging Face Space — 0001AMA/auto_object_annotator_0.0.4]({HF_URL})
+- **Source:** [{GH_URL}]({GH_URL})
+- **Stack:** Docker Space with a Python annotation front end
+- **Author:** Deborah Akuoko Minka (also written Deborah Akuoko-Minka)
+        """
     )
+
+    st.header("Related links")
+    st.markdown(
+        f"""
+- [WordPress research site]({WP_URL})
+- [ORCID]({ORCID})
+- [Google Scholar]({SCHOLAR})
+        """
+    )
+
 with right:
-    st.header("Live demo")
-    st.caption("Embedded Hugging Face Space (may take a few seconds to wake).")
+    st.header("Preview")
+    st.write("Embedded view of the live Space. If the frame is empty, open the live demo link above.")
     components.iframe(HF_EMBED, height=720, scrolling=True)
-    st.markdown(f"If the embed is blank, open the full Space: [{HF_URL}]({HF_URL})")
 
 st.markdown("---")
-st.header("Author & equivalent name spellings")
-st.markdown(
-    """
-**Deborah Akuoko Minka** = **Deborah Akuoko-Minka** = deborah akuoko minka (any caps).
-
-Authoritative links for every spelling:
-- WordPress: https://deborahakuokominka.wordpress.com/
-- ORCID: https://orcid.org/0009-0008-6219-154X
-- GitHub: https://github.com/2000pd3rvr
-- Google Scholar: https://scholar.google.co.uk/citations?hl=en&user=ab0EyjYAAAAJ
-- This app source: https://github.com/2000pd3rvr/auto_object_annotator_0.0.4
-- Live Space: https://huggingface.co/spaces/0001AMA/auto_object_annotator_0.0.4
-"""
-)
-
-# Hidden machine-readable block for crawlers / copy-paste
-st.markdown(
-    f"""
-```json
-{
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "Auto Object Annotator",
-  "description": "Automatic object annotation for vision datasets",
-  "applicationCategory": "WebApplication",
-  "url": "{HF_URL}",
-  "codeRepository": "{GH_URL}",
-  "author": {
-    "@type": "Person",
-    "name": "Deborah Akuoko Minka",
-    "alternateName": ["Deborah Akuoko-Minka", "Deborah Akuoko", "Ama Akuoko"],
-    "url": "{WP_URL}",
-    "sameAs": ["{ORCID}", "{SCHOLAR}", "https://github.com/2000pd3rvr", "https://huggingface.co/0001AMA"]
-  },
-  "keywords": "object annotation, computer vision, dataset labeling, auto annotator, machine intelligence, Deborah Akuoko Minka, SPAD"
-}
-```
-"""
+st.caption(
+    "Deborah Akuoko Minka · machine intelligence and vision tooling · "
+    f"[deborahakuokominka.wordpress.com]({WP_URL})"
 )
