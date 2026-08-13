@@ -3,4 +3,4 @@ datasets
 huggingface_hub
 Pillow
 requests
-
+streamlit>=1.28.0
