@@ -257,7 +257,7 @@ This tool prioritizes:
 ---
 
 **Built for professional spatiotemporal object detection workflows, combining visualization and annotation capabilities for RGB spatial and transient temporal data.**
-## Research profiles
+## Profiles
 
 - **WordPress:** https://deborahakuokominka.wordpress.com/
 - **about.me:** https://about.me/deborah_akuoko_minka_ama
