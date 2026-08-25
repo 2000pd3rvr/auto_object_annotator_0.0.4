@@ -23,6 +23,8 @@ HF_EMBED = "https://0001AMA-auto-object-annotator-0.0.4.hf.space"
 GH_URL = "https://github.com/2000pd3rvr/auto_object_annotator_0.0.4"
 WP_URL = "https://deborahakuokominka.wordpress.com/"
 ORCID = "https://orcid.org/0009-0008-6219-154X"
+GL_URL = "https://gitlab.com/2000pd3rvr"
+ST_HUB = "https://streamlit-apps-hub.streamlit.app/"
 
 st.markdown(
     """
@@ -61,6 +63,8 @@ with st.expander("About this project"):
 - **Live app (HF Docker):** [{HF_EMBED}]({HF_EMBED})
 - **Source:** [{GH_URL}]({GH_URL})
 - **Research site:** [{WP_URL}]({WP_URL})
+- **GitLab:** [{GL_URL}]({GL_URL})
+- **Streamlit apps:** [{ST_HUB}]({ST_HUB})
 - **ORCID:** [{ORCID}]({ORCID})
 
 The Flask annotation API needs the Docker runtime on Hugging Face; this Streamlit page
@@ -68,4 +72,4 @@ is the public entry point with the same tagger embedded.
         """
     )
 
-st.caption(f"Deborah Akuoko Minka · [research site]({WP_URL})")
+st.caption(f"Deborah Akuoko Minka · [research site]({WP_URL}) · [GitLab]({GL_URL}) · [apps hub]({ST_HUB})")
