@@ -265,6 +265,7 @@ This tool prioritizes:
 - **GitHub:** https://github.com/2000pd3rvr
 - **GitLab:** https://gitlab.com/2000pd3rvr
 - **GitHub Pages hub:** https://2000pd3rvr.github.io/ama-profile/
+- **Streamlit apps hub:** https://streamlit-apps-hub.streamlit.app/
 - **Google Scholar:** https://scholar.google.co.uk/citations?hl=en&user=ab0EyjYAAAAJ
 
 ## WordPress articles
