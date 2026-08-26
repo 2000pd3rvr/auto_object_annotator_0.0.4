@@ -266,6 +266,7 @@ This tool prioritizes:
 - **GitLab:** https://gitlab.com/2000pd3rvr
 - **GitHub Pages hub:** https://2000pd3rvr.github.io/ama-profile/
 - **Streamlit apps hub:** https://streamlit-apps-hub.streamlit.app/
+- **Render live apps:** https://deborahakuokominka.wordpress.com/#render-apps
 - **Google Scholar:** https://scholar.google.co.uk/citations?hl=en&user=ab0EyjYAAAAJ
 
 ## WordPress articles
